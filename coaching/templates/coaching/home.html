@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coaching ERP Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: transform 0.3s; }
+        .card:hover { transform: translateY(-5px); }
+        .btn-custom { background: linear-gradient(45deg, #ff6b6b, #feca57); border: none; border-radius: 25px; color: white; }
+        .btn-custom:hover { background: linear-gradient(45deg, #feca57, #ff6b6b); color: white; }
+        .form-control { border-radius: 10px; }
+        .stat-icon { font-size: 2rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="text-center text-white mb-5"><i class="fas fa-chart-line"></i> Coaching ERP Dashboard</h1>
+
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <div class="card text-center p-4">
+                    <div class="stat-icon text-primary"><i class="fas fa-calendar-day"></i></div>
+                    <h3>Total Daily Payments</h3>
+                    <h2 class="text-success">${{ daily_total }}</h2>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card text-center p-4">
+                    <div class="stat-icon text-info"><i class="fas fa-calendar-alt"></i></div>
+                    <h3>Total Monthly Collection</h3>
+                    <h2 class="text-success">${{ monthly_total }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 text-center">
+                    <h3 class="mb-4"><i class="fas fa-user-plus text-primary"></i> Add Student (Client)</h3>
+                    <a href="{% url 'add_student' %}" class="btn btn-custom btn-lg"><i class="fas fa-plus"></i> Add New Student</a>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 text-center">
+                    <h3 class="mb-4"><i class="fas fa-credit-card text-success"></i> Manage Payment</h3>
+                    <a href="{% url 'manage_payment' %}" class="btn btn-custom btn-lg"><i class="fas fa-save"></i> Manage Payments</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 text-center">
+                    <h3 class="mb-4"><i class="fas fa-search text-info"></i> Check Payment Status</h3>
+                    <a href="{% url 'payment_status_check' %}" class="btn btn-custom btn-lg"><i class="fas fa-magnifying-glass"></i> Search by Roll</a>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 text-center">
+                    <h3 class="mb-4"><i class="fas fa-chart-pie text-warning"></i> Batch-wise Summary</h3>
+                    <a href="{% url 'batch_wise_payment_summary' %}" class="btn btn-custom btn-lg"><i class="fas fa-chart-bar"></i> View Summary</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="/admin/" class="btn btn-outline-light btn-lg"><i class="fas fa-cogs"></i> Go to Admin Panel</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

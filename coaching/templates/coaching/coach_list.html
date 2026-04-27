@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coaches</title>
+</head>
+<body>
+    <h1>Coaches</h1>
+    <ul>
+        {% for coach in object_list %}
+            <li>{{ coach.name }} - {{ coach.specialization }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

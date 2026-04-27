@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Payments - Coaching ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .btn-custom { background: linear-gradient(45deg, #ff6b6b, #feca57); border: none; border-radius: 25px; color: white; }
+        .btn-custom:hover { background: linear-gradient(45deg, #feca57, #ff6b6b); color: white; }
+        .form-control { border-radius: 10px; }
+        .table { background: white; border-radius: 10px; overflow: hidden; }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h3 class="text-center mb-4"><i class="fas fa-credit-card text-success"></i> Add New Payment</h3>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ payment_form.batch.label_tag }}
+                                {{ payment_form.batch }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ payment_form.roll.label_tag }}
+                                {{ payment_form.roll }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ payment_form.name.label_tag }}
+                            {{ payment_form.name }}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ payment_form.amount.label_tag }}
+                                {{ payment_form.amount }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ payment_form.date.label_tag }}
+                                {{ payment_form.date }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ payment_form.status.label_tag }}
+                            {{ payment_form.status }}
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-custom"><i class="fas fa-save"></i> Add Payment</button>
+                        </div>
+                        {% if payment_form.errors %}
+                            <div class="alert alert-danger mt-3">
+                                {% for field, errors in payment_form.errors.items %}
+                                    {% for error in errors %}
+                                        {{ error }}<br>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-4">
+                    <h3 class="text-center mb-4"><i class="fas fa-list text-info"></i> Recent Payments</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr>
+                                    <td>{{ payment.client.name }} ({{ payment.client.batch.name }} - {{ payment.client.roll }})</td>
+                                    <td>${{ payment.amount }}</td>
+                                    <td>{{ payment.date }}</td>
+                                    <td>
+                                        {% if payment.status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No payments yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary"><i class="fas fa-home"></i> Back to Dashboard</a>
+            <a href="{% url 'payment_list' %}" class="btn btn-outline-primary ms-2"><i class="fas fa-list"></i> View All Payments</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('id_roll').addEventListener('input', function() {
+            const batchId = document.getElementById('id_batch').value;
+            const roll = this.value;
+            if (batchId && roll) {
+                fetch(`/get_client_name/?batch_id=${batchId}&roll=${roll}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('id_name').value = data.name;
+                    });
+            } else {
+                document.getElementById('id_name').value = '';
+            }
+        });
+        document.getElementById('id_batch').addEventListener('change', function() {
+            document.getElementById('id_roll').dispatchEvent(new Event('input'));
+        });
+    </script>
+</body>
+</html>

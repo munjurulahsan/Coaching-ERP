@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clients</title>
+</head>
+<body>
+    <h1>Clients</h1>
+    <ul>
+        {% for client in object_list %}
+            <li>{{ client.name }} - {{ client.goals }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sessions</title>
+</head>
+<body>
+    <h1>Sessions</h1>
+    <ul>
+        {% for session in object_list %}
+            <li>{{ session.client.name }} with {{ session.coach.name }} on {{ session.date }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
