@@ -17,8 +17,9 @@
                 <p class="mb-1"><strong>Phone:</strong> {{ client.phone }}</p>
                 <p class="mb-1"><strong>Goals:</strong> {{ client.goals }}</p>
             </div>
-            <div>
-                <a href="{% url 'client_list' %}" class="btn btn-secondary">Back to student list</a>
+            <div class="text-end">
+                <a href="{% url 'client_list' %}" class="btn btn-secondary mb-2">Back to student list</a>
+                <a href="{% url 'client_edit' client.pk %}" class="btn btn-primary">Edit Profile</a>
             </div>
         </div>
 

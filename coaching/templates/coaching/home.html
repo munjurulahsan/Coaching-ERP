@@ -7,113 +7,133 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: transform 0.3s; }
+        body { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; color: #f8fafc; }
+        .page-header { background: rgba(255,255,255,0.08); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 25px 45px rgba(0,0,0,0.18); }
+        .card { border: none; border-radius: 1rem; box-shadow: 0 18px 35px rgba(15, 23, 42, 0.3); }
+        .card-hero { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
         .card:hover { transform: translateY(-5px); }
-        .btn-custom { background: linear-gradient(45deg, #ff6b6b, #feca57); border: none; border-radius: 25px; color: white; }
-        .btn-custom:hover { background: linear-gradient(45deg, #feca57, #ff6b6b); color: white; }
-        .form-control { border-radius: 10px; }
-        .stat-icon { font-size: 2rem; margin-bottom: 10px; }
+        .btn-custom { background: linear-gradient(135deg, #38bdf8, #7c3aed); border: none; color: white; }
+        .btn-custom:hover { background: linear-gradient(135deg, #0ea5e9, #5b21b6); }
+        .form-control { border-radius: 0.85rem; }
+        .metric-icon { font-size: 2.4rem; }
+        .table thead { background: rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
     <div class="container py-5">
-        <h1 class="text-center text-white mb-5"><i class="fas fa-chart-line"></i> Coaching ERP Dashboard</h1>
-
-        <div class="row mb-5">
-            <div class="col-md-6">
-                <div class="card text-center p-4">
-                    <div class="stat-icon text-primary"><i class="fas fa-calendar-day"></i></div>
-                    <h3>Total Daily Payments</h3>
-                    <h2 class="text-success">৳{{ daily_total }}</h2>
+        <div class="page-header p-4 mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-6 fw-bold"><i class="fas fa-chalkboard-teacher me-2"></i> Coaching ERP</h1>
+                    <p class="lead text-muted mb-0">Student, batch, and payment management for your coaching center — now cleaner, faster and more useful.</p>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card text-center p-4">
-                    <div class="stat-icon text-info"><i class="fas fa-calendar-alt"></i></div>
-                    <h3>Total Monthly Collection</h3>
-                    <h2 class="text-success">৳{{ monthly_total }}</h2>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <a href="/admin/" class="btn btn-outline-light btn-lg"><i class="fas fa-cogs me-2"></i>Admin Panel</a>
                 </div>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <div class="card p-4 text-center">
-                    <h3 class="mb-4"><i class="fas fa-user-plus text-primary"></i> Add Student (Client)</h3>
-                    <a href="{% url 'add_student' %}" class="btn btn-custom btn-lg"><i class="fas fa-plus"></i> Add New Student</a>
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card card-hero p-4 text-white metric-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted">Total Students</h6>
+                            <h2 class="fw-bold">{{ total_students }}</h2>
+                        </div>
+                        <div class="metric-icon text-info"><i class="fas fa-user-graduate"></i></div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6 mb-4">
-                <div class="card p-4 text-center">
-                    <h3 class="mb-4"><i class="fas fa-credit-card text-success"></i> Manage Payment</h3>
-                    <a href="{% url 'manage_payment' %}" class="btn btn-custom btn-lg"><i class="fas fa-save"></i> Manage Payments</a>
+            <div class="col-md-4">
+                <div class="card card-hero p-4 text-white metric-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted">Active Batches</h6>
+                            <h2 class="fw-bold">{{ total_batches }}</h2>
+                        </div>
+                        <div class="metric-icon text-warning"><i class="fas fa-layer-group"></i></div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="card p-4 text-center">
-                    <h3 class="mb-4"><i class="fas fa-search text-info"></i> Check Payment Status</h3>
-                    <a href="{% url 'payment_status_check' %}" class="btn btn-custom btn-lg"><i class="fas fa-magnifying-glass"></i> Search by Roll</a>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card p-4 text-center">
-                    <h3 class="mb-4"><i class="fas fa-chart-pie text-warning"></i> Batch-wise Summary</h3>
-                    <a href="{% url 'batch_wise_payment_summary' %}" class="btn btn-custom btn-lg"><i class="fas fa-chart-bar"></i> View Summary</a>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card p-4 text-center">
-                    <h3 class="mb-4"><i class="fas fa-file-invoice-dollar text-success"></i> Payment Report</h3>
-                    <a href="{% url 'payment_report' %}" class="btn btn-custom btn-lg"><i class="fas fa-file-alt"></i> Generate Report</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <div class="card p-4 text-center">
-                    <h3 class="mb-4"><i class="fas fa-users text-secondary"></i> Student List</h3>
-                    <a href="{% url 'client_list' %}" class="btn btn-custom btn-lg"><i class="fas fa-list"></i> View Students</a>
-                </div>
-            </div>
-            <div class="col-md-6 mb-4">
-                <div class="card p-4 text-center">
-                    <h3 class="mb-4"><i class="fas fa-layer-group text-dark"></i> Batch Management</h3>
-                    <a href="{% url 'batch_list' %}" class="btn btn-custom btn-lg"><i class="fas fa-layer-plus"></i> Manage Batches</a>
+            <div class="col-md-4">
+                <div class="card card-hero p-4 text-white metric-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted">Payments Recorded</h6>
+                            <h2 class="fw-bold">{{ total_payments }}</h2>
+                        </div>
+                        <div class="metric-icon text-success"><i class="fas fa-wallet"></i></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="card p-4 mt-4 bg-white text-dark">
-            <h4 class="mb-3">Batch Enrollment Summary</h4>
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card p-4 text-center">
+                    <div class="mb-3 text-primary"><i class="fas fa-user-plus fa-2x"></i></div>
+                    <h5>Add Student</h5>
+                    <p class="text-muted">Enroll a new student in a batch.</p>
+                    <a href="{% url 'add_student' %}" class="btn btn-custom btn-sm">Add Now</a>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-4 text-center">
+                    <div class="mb-3 text-success"><i class="fas fa-credit-card fa-2x"></i></div>
+                    <h5>Manage Payments</h5>
+                    <p class="text-muted">Record and update fees quickly.</p>
+                    <a href="{% url 'manage_payment' %}" class="btn btn-custom btn-sm">Open</a>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-4 text-center">
+                    <div class="mb-3 text-info"><i class="fas fa-file-invoice fa-2x"></i></div>
+                    <h5>Payment Report</h5>
+                    <p class="text-muted">Filter by batch or date.</p>
+                    <a href="{% url 'payment_report' %}" class="btn btn-custom btn-sm">View</a>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-4 text-center">
+                    <div class="mb-3 text-warning"><i class="fas fa-users fa-2x"></i></div>
+                    <h5>Student List</h5>
+                    <p class="text-muted">See profiles and edit details.</p>
+                    <a href="{% url 'client_list' %}" class="btn btn-custom btn-sm">Open</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 bg-white text-dark mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="mb-1">Batch Enrollment Overview</h4>
+                    <p class="text-muted mb-0">Track student count per batch at a glance.</p>
+                </div>
+                <a href="{% url 'batch_list' %}" class="btn btn-outline-primary">Manage Batches</a>
+            </div>
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-striped align-middle">
                     <thead>
                         <tr>
                             <th>Batch</th>
-                            <th>Students Enrolled</th>
+                            <th>Schedule</th>
+                            <th>Students</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for batch in batches %}
                             <tr>
-                                <td>{{ batch.name }} ({{ batch.time }})</td>
+                                <td>{{ batch.name }}</td>
+                                <td>{{ batch.time }}</td>
                                 <td>{{ batch.client_set.count }}</td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="2">No batches available yet.</td></tr>
+                            <tr><td colspan="3" class="text-center">No batches available yet.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
-
-        <div class="text-center mt-4">
-            <a href="/admin/" class="btn btn-outline-light btn-lg"><i class="fas fa-cogs"></i> Go to Admin Panel</a>
         </div>
     </div>
 

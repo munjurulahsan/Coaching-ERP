@@ -4,7 +4,7 @@ from django.db.models import Sum, Max, Count
 from datetime import date
 from django.http import JsonResponse
 from .models import Coach, Client, Session, Payment, Batch
-from .forms import ClientForm, PaymentForm
+from .forms import ClientForm, PaymentForm, BatchForm, ClientEditForm
 
 def get_client_name(request):
     batch_id = request.GET.get('batch_id')
@@ -29,6 +29,9 @@ def home(request):
     today = date.today()
     start_of_month = today.replace(day=1)
 
+    total_students = Client.objects.count()
+    total_batches = Batch.objects.count()
+    total_payments = Payment.objects.count()
     daily_total = Payment.objects.filter(date=today, status='paid').aggregate(total=Sum('amount'))['total'] or 0
     monthly_total = Payment.objects.filter(date__gte=start_of_month, status='paid').aggregate(total=Sum('amount'))['total'] or 0
     batches = Batch.objects.all()
@@ -37,6 +40,9 @@ def home(request):
         'daily_total': daily_total,
         'monthly_total': monthly_total,
         'batches': batches,
+        'total_students': total_students,
+        'total_batches': total_batches,
+        'total_payments': total_payments,
     }
     return render(request, 'coaching/home.html', context)
 
@@ -53,6 +59,24 @@ def add_student(request):
         'client_form': client_form,
     }
     return render(request, 'coaching/add_student.html', context)
+
+
+def client_edit(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+    if request.method == 'POST':
+        form = ClientEditForm(request.POST, instance=client)
+        if form.is_valid():
+            updated_client = form.save(commit=False)
+            if updated_client.batch != client.batch:
+                max_roll = Client.objects.filter(batch=updated_client.batch).aggregate(max_roll=Max('roll'))['max_roll'] or 0
+                updated_client.roll = max_roll + 1
+            updated_client.save()
+            return redirect('client_profile', pk=client.pk)
+    else:
+        form = ClientEditForm(instance=client, initial={'roll': client.roll})
+
+    return render(request, 'coaching/client_edit.html', {'form': form, 'client': client})
+
 
 def manage_payment(request):
     payment_form = PaymentForm(request.POST or None)
@@ -75,6 +99,31 @@ def manage_payment(request):
         'payments': payments,
     }
     return render(request, 'coaching/manage_payment.html', context)
+
+
+def batch_create(request):
+    form = BatchForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect('batch_list')
+    return render(request, 'coaching/batch_form.html', {
+        'form': form,
+        'title': 'Create New Batch',
+        'submit_text': 'Create Batch',
+    })
+
+
+def batch_edit(request, pk):
+    batch = get_object_or_404(Batch, pk=pk)
+    form = BatchForm(request.POST or None, instance=batch)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect('batch_list')
+    return render(request, 'coaching/batch_form.html', {
+        'form': form,
+        'title': f'Edit Batch: {batch.name}',
+        'submit_text': 'Update Batch',
+    })
 
 class CoachListView(ListView):
     model = Coach
