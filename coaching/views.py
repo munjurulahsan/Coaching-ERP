@@ -1,6 +1,6 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView
-from django.db.models import Sum, Max
+from django.db.models import Sum, Max, Count
 from datetime import date
 from django.http import JsonResponse
 from .models import Coach, Client, Session, Payment, Batch
@@ -31,10 +31,12 @@ def home(request):
 
     daily_total = Payment.objects.filter(date=today, status='paid').aggregate(total=Sum('amount'))['total'] or 0
     monthly_total = Payment.objects.filter(date__gte=start_of_month, status='paid').aggregate(total=Sum('amount'))['total'] or 0
+    batches = Batch.objects.all()
 
     context = {
         'daily_total': daily_total,
         'monthly_total': monthly_total,
+        'batches': batches,
     }
     return render(request, 'coaching/home.html', context)
 
@@ -113,6 +115,64 @@ class PaymentListView(ListView):
         self.object_list = self.get_queryset()
         context = self.get_context_data(payment_form=form)
         return self.render_to_response(context)
+
+
+def client_profile(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+    payments = Payment.objects.filter(client=client).order_by('-date')
+    context = {
+        'client': client,
+        'payments': payments,
+        'total_paid': client.paid_amount(),
+        'payment_count': client.total_payments(),
+    }
+    return render(request, 'coaching/client_profile.html', context)
+
+
+def batch_list(request):
+    batches = Batch.objects.annotate(student_count=Count('client')).all()
+    batch_info = []
+    for batch in batches:
+        paid_amount = Payment.objects.filter(client__batch=batch, status='paid').aggregate(total=Sum('amount'))['total'] or 0
+        batch_info.append({
+            'batch': batch,
+            'student_count': batch.student_count(),
+            'paid_amount': paid_amount,
+            'paid_students': batch.unique_students_paid(),
+        })
+    return render(request, 'coaching/batch_list.html', {'batch_info': batch_info})
+
+
+def payment_report(request):
+    batches = Batch.objects.all()
+    selected_batch_id = request.GET.get('batch')
+    from_date = request.GET.get('from_date')
+    to_date = request.GET.get('to_date')
+    payments = Payment.objects.select_related('client', 'client__batch').all().order_by('-date')
+
+    if selected_batch_id:
+        payments = payments.filter(client__batch_id=selected_batch_id)
+    if from_date:
+        payments = payments.filter(date__gte=from_date)
+    if to_date:
+        payments = payments.filter(date__lte=to_date)
+
+    total_paid = payments.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
+    total_pending = payments.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
+    total_overdue = payments.filter(status='overdue').aggregate(total=Sum('amount'))['total'] or 0
+
+    context = {
+        'batches': batches,
+        'payments': payments,
+        'total_paid': total_paid,
+        'total_pending': total_pending,
+        'total_overdue': total_overdue,
+        'selected_batch_id': int(selected_batch_id) if selected_batch_id else None,
+        'from_date': from_date,
+        'to_date': to_date,
+    }
+    return render(request, 'coaching/payment_report.html', context)
+
 
 def payment_status_check(request):
     client_data = None

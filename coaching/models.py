@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 
 class Batch(models.Model):
     name = models.CharField(max_length=100)
@@ -6,6 +7,15 @@ class Batch(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.time})"
+
+    def student_count(self):
+        return self.client_set.count()
+
+    def paid_amount(self):
+        return self.client_set.aggregate(total=Sum('payment__amount'))['total'] or 0
+
+    def unique_students_paid(self):
+        return self.client_set.filter(payment__status='paid').distinct().count()
 
 class Coach(models.Model):
     name = models.CharField(max_length=100)
@@ -34,6 +44,16 @@ class Client(models.Model):
             batch_name = "No Batch"
         roll_str = f"Roll {self.roll}" if self.roll else "No Roll"
         return f"{self.name} ({roll_str}, {batch_name})"
+
+    def paid_amount(self):
+        return self.payment_set.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
+
+    def total_payments(self):
+        return self.payment_set.count()
+
+    def due_amount(self):
+        # if you want a fixed fee per student, update this logic accordingly
+        return 0
 
 class Session(models.Model):
     coach = models.ForeignKey(Coach, on_delete=models.CASCADE)

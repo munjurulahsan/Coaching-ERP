@@ -1,14 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Clients</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <h1>Clients</h1>
-    <ul>
-        {% for client in object_list %}
-            <li>{{ client.name }} - {{ client.goals }}</li>
-        {% endfor %}
-    </ul>
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Student List</h1>
+            <a href="{% url 'home' %}" class="btn btn-secondary">Dashboard</a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <p class="mb-0">Total Students: <strong>{{ object_list|length }}</strong></p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Batch</th>
+                        <th>Roll</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Paid</th>
+                        <th>Profile</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in object_list %}
+                        <tr>
+                            <td>{{ client.name }}</td>
+                            <td>{{ client.batch.name }} ({{ client.batch.time }})</td>
+                            <td>{{ client.roll }}</td>
+                            <td>{{ client.phone }}</td>
+                            <td>{{ client.email }}</td>
+                            <td>৳{{ client.paid_amount }}</td>
+                            <td><a href="{% url 'client_profile' client.pk %}" class="btn btn-sm btn-primary">View</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7" class="text-center">No students found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>
