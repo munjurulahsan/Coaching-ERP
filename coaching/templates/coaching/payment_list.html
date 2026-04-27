@@ -98,7 +98,7 @@
                                 {% for payment in payments %}
                                     <tr>
                                         <td>{{ payment.client.name }}<br><small class="text-muted">{{ payment.client.batch.name }} - Roll {{ payment.client.roll }}</small></td>
-                                        <td>${{ payment.amount }}</td>
+                                        <td>৳{{ payment.amount }}</td>
                                         <td>{{ payment.date }}</td>
                                         <td>
                                             {% if payment.status == 'paid' %}

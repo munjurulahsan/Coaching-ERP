@@ -51,7 +51,7 @@
 
                         <div class="alert alert-info text-dark mb-0">
                             <div class="small">Pending Amount</div>
-                            <strong>${{ batch_info.total_pending_amount }}</strong>
+                            <strong>৳{{ batch_info.total_pending_amount }}</strong>
                         </div>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
                                 <td class="text-center">{{ batch_info.total_students }}</td>
                                 <td class="text-center"><span class="badge bg-success">{{ batch_info.paid_students }}</span></td>
                                 <td class="text-center"><span class="badge bg-warning text-dark">{{ batch_info.pending_students }}</span></td>
-                                <td class="text-end"><strong>${{ batch_info.total_pending_amount }}</strong></td>
+                                <td class="text-end"><strong>৳{{ batch_info.total_pending_amount }}</strong></td>
                             </tr>
                             {% endfor %}
                         </tbody>

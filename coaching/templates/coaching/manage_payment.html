@@ -83,7 +83,7 @@
                                 {% for payment in payments %}
                                 <tr>
                                     <td>{{ payment.client.name }} ({{ payment.client.batch.name }} - {{ payment.client.roll }})</td>
-                                    <td>${{ payment.amount }}</td>
+                                    <td>৳{{ payment.amount }}</td>
                                     <td>{{ payment.date }}</td>
                                     <td>
                                         {% if payment.status == 'paid' %}

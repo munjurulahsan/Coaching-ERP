@@ -107,7 +107,7 @@
                             {% for payment in payment_history %}
                             <tr>
                                 <td class="text-white">{{ payment.date }}</td>
-                                <td class="text-white"><strong>${{ payment.amount }}</strong></td>
+                                <td class="text-white"><strong>৳{{ payment.amount }}</strong></td>
                                 <td>
                                     {% if payment.status == 'paid' %}
                                         <span class="badge bg-success status-badge">✓ Paid</span>

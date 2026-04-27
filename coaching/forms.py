@@ -18,6 +18,6 @@ class PaymentForm(forms.Form):
     batch = forms.ModelChoiceField(queryset=Batch.objects.all(), widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_batch'}))
     roll = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter roll number', 'id': 'id_roll'}))
     name = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Student name', 'readonly': 'readonly', 'id': 'id_name'}))
-    amount = forms.DecimalField(max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter amount'}))
+    amount = forms.DecimalField(max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter amount (BDT)'}))
     date = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
     status = forms.ChoiceField(choices=[('pending', 'Pending'), ('paid', 'Paid'), ('overdue', 'Overdue')], widget=forms.Select(attrs={'class': 'form-control'}))
