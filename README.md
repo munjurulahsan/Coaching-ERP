@@ -37,4 +37,4 @@ DATABASES = {
 
 - Manage coaches, clients, sessions, and payments.
 - Admin interface for CRUD operations.
-- Basic web views for listing entities.
+- Basic web views for listing entities.# Coaching-ERP
