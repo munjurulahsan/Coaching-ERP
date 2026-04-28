@@ -5,16 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Report</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f4f7fb;
+            color: #1f2937;
+            min-height: 100vh;
+        }
+        .page-header,
+        .filter-panel,
+        .report-panel {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        }
+        .page-header { padding: 20px 22px; }
+        .filter-panel { padding: 18px; }
+        .report-panel { padding: 18px; }
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+        .metric-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+        }
+        .metric-label {
+            color: #64748b;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+        .form-control,
+        .form-select,
+        .btn {
+            border-radius: 8px;
+        }
+        .table thead th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.88rem;
+            white-space: nowrap;
+        }
+        .table tbody tr:hover { background: #f9fbff; }
+        .section-heading {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+        .print-section { display: none; }
+        body.print-mode > .container { display: none; }
+        body.print-mode .print-section { display: none; }
+        body.print-mode .print-section.print-active {
+            display: block;
+            padding: 24px;
+            background: #ffffff;
+        }
+
+        @media print {
+            body.print-mode > * { display: none !important; }
+            body.print-mode .print-section.print-active,
+            body.print-mode .print-section.print-active * { display: revert !important; }
+            body.print-mode .print-section.print-active {
+                display: block !important;
+                padding: 0;
+            }
+            body.print-mode .no-print { display: none !important; }
+            body.print-mode table { width: 100%; border-collapse: collapse; }
+            body.print-mode th,
+            body.print-mode td {
+                border: 1px solid #333 !important;
+                padding: 6px !important;
+                color: #000 !important;
+            }
+            body.print-mode .badge {
+                border: 1px solid #333;
+                color: #000 !important;
+                background: #fff !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Payment Report</h1>
-            <a href="{% url 'home' %}" class="btn btn-secondary">Dashboard</a>
+        <div class="page-header d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4 no-print">
+            <div>
+                <h1 class="page-title mb-1">Payment Report</h1>
+                <p class="text-muted mb-0">Track collections, dues, and student payment status from one place.</p>
+            </div>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">Dashboard</a>
         </div>
 
-        <form method="get" class="row g-3 mb-4">
-            <div class="col-md-4">
+        <form method="get" class="filter-panel row g-3 mb-4 no-print">
+            <div class="col-md-3">
                 <label class="form-label">Batch</label>
                 <select name="batch" class="form-select">
                     <option value="">All Batches</option>
@@ -24,49 +113,190 @@
                 </select>
             </div>
             <div class="col-md-3">
+                <label class="form-label">Payment Month</label>
+                <input type="month" name="payment_month" value="{{ selected_payment_month }}" class="form-control">
+            </div>
+            <div class="col-md-3">
                 <label class="form-label">From</label>
                 <input type="date" name="from_date" value="{{ from_date }}" class="form-control">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">To</label>
                 <input type="date" name="to_date" value="{{ to_date }}" class="form-control">
             </div>
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-1 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">Filter</button>
             </div>
         </form>
 
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card p-3 mb-3">
-                    <h5>Total Paid</h5>
-                    <p class="display-6">৳{{ total_paid }}</p>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="metric-card p-3 border-success h-100">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div class="metric-label">Today's Collection</div>
+                        <button class="btn btn-sm btn-outline-success no-print" type="button" onclick="printSection('dailyCollectionPrint')">Print</button>
+                    </div>
+                    <p class="text-muted mb-1">{{ collection_date }}</p>
+                    <p class="metric-value text-success mb-0">৳{{ daily_collection }}</p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card p-3 mb-3">
-                    <h5>Total Pending</h5>
-                    <p class="display-6">৳{{ total_pending }}</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card p-3 mb-3">
-                    <h5>Total Overdue</h5>
-                    <p class="display-6">৳{{ total_overdue }}</p>
+            <div class="col-md-6">
+                <div class="metric-card p-3 border-primary h-100">
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div class="metric-label">This Month's Collection</div>
+                        <button class="btn btn-sm btn-outline-primary no-print" type="button" onclick="printSection('monthlyCollectionPrint')">Print</button>
+                    </div>
+                    <p class="text-muted mb-1">{{ collection_month_label }}</p>
+                    <p class="metric-value text-primary mb-0">৳{{ monthly_collection }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped">
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="metric-card p-3 h-100">
+                    <div class="metric-label">Total Paid</div>
+                    <p class="metric-value mb-0">৳{{ total_paid }}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="metric-card p-3 h-100">
+                    <div class="metric-label">Total Pending</div>
+                    <p class="metric-value mb-0">৳{{ total_pending }}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="metric-card p-3 h-100">
+                    <div class="metric-label">Total Overdue</div>
+                    <p class="metric-value mb-0">৳{{ total_overdue }}</p>
+                </div>
+            </div>
+        </div>
+
+        {% if selected_batch %}
+            <div class="report-panel mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h3 class="section-heading mb-0">{{ selected_batch.name }} Payment Summary</h3>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="text-muted">{{ selected_batch.time }} | Paused students are excluded for their pause month</span>
+                        <button class="btn btn-sm btn-outline-secondary no-print" type="button" onclick="printSection('studentListPrint')">Print Student List</button>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <div class="metric-label">Total Students</div>
+                            <p class="metric-value mb-0">{{ total_batch_students }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <div class="metric-label">Monthly Fee Paid</div>
+                            <p class="metric-value text-success mb-0">{{ monthly_paid_count }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card p-3 h-100">
+                            <div class="metric-label">Monthly Fee Due</div>
+                            <p class="metric-value text-danger mb-0">{{ monthly_due_count }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Roll</th>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Monthly Fee</th>
+                                <th>Admission Fee</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in batch_student_rows %}
+                                <tr>
+                                    <td>{{ row.student.roll }}</td>
+                                    <td>{{ row.student.name }}</td>
+                                    <td>{{ row.student.phone }}</td>
+                                    <td>
+                                        {% if row.has_paid_monthly %}
+                                            <span class="badge bg-success">Paid</span>
+                                            <span class="ms-2">{{ row.paid_months }}</span>
+                                            <button class="btn btn-sm btn-outline-primary ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#monthlyDetails{{ row.student.id }}" aria-expanded="false" aria-controls="monthlyDetails{{ row.student.id }}">
+                                                Details
+                                            </button>
+                                        {% else %}
+                                            <span class="badge bg-danger">Due</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if row.has_paid_admission %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Unpaid</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% if row.has_paid_monthly %}
+                                    <tr class="collapse" id="monthlyDetails{{ row.student.id }}">
+                                        <td colspan="5">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Payment Date</th>
+                                                            <th>Payment Month</th>
+                                                            <th>Amount</th>
+                                                            <th>Status</th>
+                                                            <th>Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for payment in row.monthly_payments %}
+                                                            <tr>
+                                                                <td>{{ payment.date }}</td>
+                                                                <td>{{ payment.display_month }}</td>
+                                                                <td>৳{{ payment.amount }}</td>
+                                                                <td>{{ payment.status|capfirst }}</td>
+                                                                <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% empty %}
+                                <tr><td colspan="5" class="text-center">No students found in this batch.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="report-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="section-heading mb-0">Payment Details</h3>
+                <span class="text-muted small">{{ payments|length }} entries</span>
+            </div>
+            <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
                         <th>Date</th>
                         <th>Batch</th>
                         <th>Roll</th>
                         <th>Name</th>
+                        <th>Type</th>
+                        <th>Month</th>
                         <th>Amount</th>
                         <th>Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -76,15 +306,133 @@
                             <td>{{ payment.client.batch.name }}</td>
                             <td>{{ payment.client.roll }}</td>
                             <td>{{ payment.client.name }}</td>
+                            <td>{{ payment.get_fee_type_display }}</td>
+                            <td>{{ payment.payment_month|default:"-" }}</td>
                             <td>৳{{ payment.amount }}</td>
                             <td>{{ payment.status|capfirst }}</td>
+                            <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="6" class="text-center">No payments found for this filter.</td></tr>
+                        <tr><td colspan="9" class="text-center">No payments found for this filter.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
+    <section id="dailyCollectionPrint" class="print-section">
+        <h2>Daily Collection Details</h2>
+        <p><strong>Date:</strong> {{ collection_date }}</p>
+        <p><strong>Total:</strong> ৳{{ daily_collection }}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Batch</th>
+                    <th>Roll</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Month</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in daily_collection_payments %}
+                    <tr>
+                        <td>{{ payment.date }}</td>
+                        <td>{{ payment.client.batch.name }}</td>
+                        <td>{{ payment.client.roll }}</td>
+                        <td>{{ payment.client.name }}</td>
+                        <td>{{ payment.get_fee_type_display }}</td>
+                        <td>{{ payment.display_month }}</td>
+                        <td>৳{{ payment.amount }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7">No paid collection found for this day.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section id="monthlyCollectionPrint" class="print-section">
+        <h2>Monthly Collection Details</h2>
+        <p><strong>Month:</strong> {{ collection_month_label }}</p>
+        <p><strong>Total:</strong> ৳{{ monthly_collection }}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Batch</th>
+                    <th>Roll</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Month</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in monthly_collection_payments %}
+                    <tr>
+                        <td>{{ payment.date }}</td>
+                        <td>{{ payment.client.batch.name }}</td>
+                        <td>{{ payment.client.roll }}</td>
+                        <td>{{ payment.client.name }}</td>
+                        <td>{{ payment.get_fee_type_display }}</td>
+                        <td>{{ payment.display_month }}</td>
+                        <td>৳{{ payment.amount }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7">No paid collection found for this month.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section id="studentListPrint" class="print-section">
+        <h2>Student List{% if selected_batch %} - {{ selected_batch.name }}{% endif %}</h2>
+        {% if selected_batch %}<p><strong>Batch Time:</strong> {{ selected_batch.time }}</p>{% endif %}
+        <p><strong>Total Students:</strong> {{ total_batch_students }}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Roll</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Monthly Fee</th>
+                    <th>Admission Fee</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in batch_student_rows %}
+                    <tr>
+                        <td>{{ row.student.roll }}</td>
+                        <td>{{ row.student.name }}</td>
+                        <td>{{ row.student.phone }}</td>
+                        <td>{% if row.has_paid_monthly %}Paid - {{ row.paid_months }}{% else %}Due{% endif %}</td>
+                        <td>{% if row.has_paid_admission %}Paid{% else %}Unpaid{% endif %}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">Select a batch to print student list.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function printSection(sectionId) {
+            document.querySelectorAll('.print-section').forEach(function(section) {
+                section.classList.toggle('print-active', section.id === sectionId);
+            });
+            document.body.classList.add('print-mode');
+            window.print();
+        }
+
+        window.addEventListener('afterprint', function() {
+            document.body.classList.remove('print-mode');
+            document.querySelectorAll('.print-section').forEach(function(section) {
+                section.classList.remove('print-active');
+            });
+        });
+    </script>
 </body>
 </html>

@@ -44,7 +44,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="roll" class="form-label">Enter Roll Number</label>
-                            <input type="number" name="roll" id="roll" class="form-control" placeholder="e.g., 1, 2, 3..." required>
+                            <input type="text" name="roll" id="roll" class="form-control" placeholder="e.g., 1, A-1, R-01..." required>
                         </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-custom btn-lg"><i class="fas fa-search"></i> Check Status</button>
@@ -99,6 +99,8 @@
                         <thead>
                             <tr style="background: rgba(255,255,255,0.15);">
                                 <th class="text-white">Date</th>
+                                <th class="text-white">Type</th>
+                                <th class="text-white">Month</th>
                                 <th class="text-white">Amount</th>
                                 <th class="text-white">Status</th>
                             </tr>
@@ -107,6 +109,8 @@
                             {% for payment in payment_history %}
                             <tr>
                                 <td class="text-white">{{ payment.date }}</td>
+                                <td class="text-white">{{ payment.get_fee_type_display }}</td>
+                                <td class="text-white">{{ payment.payment_month|default:"-" }}</td>
                                 <td class="text-white"><strong>৳{{ payment.amount }}</strong></td>
                                 <td>
                                     {% if payment.status == 'paid' %}

@@ -27,6 +27,11 @@
                     <label class="form-label">Schedule</label>
                     {{ form.time }}
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Start Roll</label>
+                    {{ form.start_roll }}
+                    <div class="form-text">First student roll for this batch. After that, rolls auto-generate one by one.</div>
+                </div>
                 <button type="submit" class="btn btn-primary">{{ submit_text }}</button>
             </form>
         </div>

@@ -5,29 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Batch Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f4f7fb; color: #1f2937; min-height: 100vh; }
+        .page-header,
+        .list-panel {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        }
+        .page-header { padding: 20px 22px; }
+        .list-panel { padding: 18px; }
+        .page-title { font-size: 2rem; font-weight: 800; }
+        .btn { border-radius: 8px; }
+        .table thead th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.88rem;
+            white-space: nowrap;
+        }
+        .table tbody tr:hover { background: #f9fbff; }
+    </style>
 </head>
 <body>
     <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="page-header d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
             <div>
-                <h1>Batch Management</h1>
+                <h1 class="page-title mb-1">Batch Management</h1>
                 <p class="text-muted mb-0">Create, edit and review all coaching batches.</p>
             </div>
-            <div>
-                <a href="{% url 'home' %}" class="btn btn-secondary me-2">Dashboard</a>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">Dashboard</a>
                 <a href="{% url 'batch_create' %}" class="btn btn-primary">Create Batch</a>
             </div>
         </div>
 
+        <div class="list-panel">
         <div class="table-responsive">
-            <table class="table table-bordered table-hover table-striped align-middle">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
                     <tr>
                         <th>Batch</th>
                         <th>Schedule</th>
                         <th>Total Students</th>
                         <th>Paid Students</th>
-                        <th>Total Paid</th>
+                        <th>Unpaid Students</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -38,9 +60,15 @@
                             <td>{{ item.batch.time }}</td>
                             <td>{{ item.student_count }}</td>
                             <td>{{ item.paid_students }}</td>
-                            <td>৳{{ item.paid_amount }}</td>
+                            <td>{{ item.unpaid_students }}</td>
                             <td>
-                                <a href="{% url 'batch_edit' item.batch.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="{% url 'batch_edit' item.batch.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form method="post" action="{% url 'batch_delete' item.batch.pk %}" onsubmit="return confirm('Delete {{ item.batch.name|escapejs }}? This will also delete all students and payments in this batch.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     {% empty %}
@@ -48,6 +76,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
         </div>
     </div>
 </body>

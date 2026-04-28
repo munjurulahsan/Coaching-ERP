@@ -25,26 +25,47 @@
                     <div class="col-md-6">
                         <label class="form-label">Name</label>
                         {{ form.name }}
+                        {{ form.name.errors }}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Email</label>
                         {{ form.email }}
+                        {{ form.email.errors }}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Phone</label>
                         {{ form.phone }}
+                        {{ form.phone.errors }}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Roll</label>
                         {{ form.roll }}
+                        {{ form.roll.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Monthly Fee</label>
+                        {{ form.monthly_fee }}
+                        {{ form.monthly_fee.errors }}
                     </div>
                     <div class="col-12">
                         <label class="form-label">Batch</label>
                         {{ form.batch }}
+                        {{ form.batch.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Student Status</label>
+                        {{ form.status }}
+                        {{ form.status.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Pause Month</label>
+                        {{ form.pause_month }}
+                        {{ form.pause_month.errors }}
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Goals</label>
-                        {{ form.goals }}
+                        <label class="form-label">Status Comment</label>
+                        {{ form.status_comment }}
+                        {{ form.status_comment.errors }}
                     </div>
                 </div>
 
