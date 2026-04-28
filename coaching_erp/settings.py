@@ -29,6 +29,9 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-w6$4qw^l0$y03bz_zi=0-
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default='')
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition
@@ -78,9 +81,10 @@ WSGI_APPLICATION = 'coaching_erp.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # Use PostgreSQL if DATABASE_URL is set (Railway), else SQLite (local)
-if config('DATABASE_URL', default=None):
+DATABASE_URL = config('DATABASE_URL', default='')
+if DATABASE_URL:
     DATABASES = {
-        'default': dj_database_url.config(default=config('DATABASE_URL'), conn_max_age=600)
+        'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
     }
 else:
     DATABASES = {
