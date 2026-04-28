@@ -45,17 +45,25 @@ gunicorn coaching_erp.wsgi:application
 The first deploy will install packages, collect static files, and run migrations.
 When the deploy finishes, open the generated `.onrender.com` URL.
 
-## 4. Create the admin user
+## 4. Create the admin user on the free plan
 
-In Render:
+Render free web services do not include Shell access. Create the admin user with environment variables instead:
 
 1. Open the `coaching-erp` web service.
-2. Go to **Shell**.
-3. Run:
+2. Go to **Environment**.
+3. Add these environment variables:
 
-```bash
-python manage.py createsuperuser
+```text
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_EMAIL=your-email@example.com
+DJANGO_SUPERUSER_PASSWORD=choose-a-strong-password
 ```
+
+4. Save changes.
+5. Go to **Manual Deploy**.
+6. Click **Deploy latest commit**.
+
+During deploy, `build.sh` runs `python manage.py create_admin` and creates or updates the admin user.
 
 Then visit:
 
