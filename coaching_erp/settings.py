@@ -132,10 +132,28 @@ USE_I18N = True
 USE_TZ = True
 
 
+# SMS gateway settings. Keep API credentials in environment variables, never in code.
+SMS_ENABLED = config('SMS_ENABLED', default=False, cast=bool)
+SMS_API_URL = config('SMS_API_URL', default='https://api.sms.net.bd/sendsms')
+SMS_API_KEY = config('SMS_API_KEY', default='')
+SMS_API_KEY_PARAM = config('SMS_API_KEY_PARAM', default='api_key')
+SMS_TO_PARAM = config('SMS_TO_PARAM', default='to')
+SMS_MESSAGE_PARAM = config('SMS_MESSAGE_PARAM', default='msg')
+SMS_SENDER_ID = config('SMS_SENDER_ID', default='')
+SMS_SENDER_PARAM = config('SMS_SENDER_PARAM', default='sender_id')
+SMS_METHOD = config('SMS_METHOD', default='POST')
+SMS_TIMEOUT_SECONDS = config('SMS_TIMEOUT_SECONDS', default=10, cast=int)
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = '/static/'
+FORCE_SCRIPT_NAME = config('FORCE_SCRIPT_NAME', default='', cast=str) or None
+if FORCE_SCRIPT_NAME:
+    STATIC_URL = f'{FORCE_SCRIPT_NAME.rstrip('/')}/static/'
+else:
+    STATIC_URL = '/static/'
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

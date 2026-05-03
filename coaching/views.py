@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Coach, Client, Session, Payment, Batch
 from .forms import ClientForm, PaymentForm, PaymentEditForm, BatchForm, ClientEditForm, BulkStudentImportForm
+from .sms import notify_payment_received
 
 
 def format_payment_month(payment):
@@ -22,6 +23,65 @@ def format_payment_month(payment):
         except (ValueError, IndexError):
             return payment.payment_month
     return payment.date.strftime('%B %Y')
+
+
+def format_month_value(month_value):
+    if not month_value:
+        return ''
+    try:
+        year, month = month_value.split('-', 1)
+        return f"{calendar.month_name[int(month)]} {year}"
+    except (ValueError, IndexError):
+        return month_value
+
+
+def month_range(start_date, end_date):
+    months = []
+    year = start_date.year
+    month = start_date.month
+    while (year, month) <= (end_date.year, end_date.month):
+        month_value = f'{year}-{month:02d}'
+        months.append({
+            'raw_month': month_value,
+            'month': format_month_value(month_value),
+        })
+        month += 1
+        if month == 13:
+            month = 1
+            year += 1
+    return months
+
+
+def get_client_admission_date(client):
+    return client.admission_date
+
+
+def get_monthly_due_months(client, until_date=None):
+    if client.monthly_fee <= 0:
+        return []
+
+    until_date = until_date or date.today()
+    admission_date = get_client_admission_date(client)
+    paid_months = set(
+        Payment.objects.filter(
+            client=client,
+            fee_type='monthly',
+            status='paid',
+        )
+        .exclude(payment_month='')
+        .values_list('payment_month', flat=True)
+    )
+
+    due_months = []
+    for month in month_range(admission_date, until_date):
+        raw_month = month['raw_month']
+        if raw_month in paid_months:
+            continue
+        due_months.append({
+            **month,
+            'amount': str(client.monthly_fee),
+        })
+    return due_months
 
 
 def get_last_cleared_month(client):
@@ -159,23 +219,7 @@ def get_client_name(request):
     if not client:
         return JsonResponse({'name': '', 'monthly_fee': '', 'error': error, 'due_payments': []})
 
-    due_payments = []
-    dues = Payment.objects.filter(
-        client=client,
-        fee_type='monthly',
-        status__in=['pending', 'overdue'],
-    )
-    if payment_month:
-        dues = dues.exclude(payment_month=payment_month)
-    dues = dues.order_by('-date', '-id')[:10]
-    for payment in dues:
-        due_payments.append({
-            'date': payment.date.isoformat(),
-            'month': format_payment_month(payment),
-            'raw_month': payment.payment_month,
-            'amount': str(payment.amount),
-            'status': payment.status.capitalize(),
-        })
+    due_payments = get_monthly_due_months(client)
 
     selected_month_paid = False
     selected_month_duplicate = None
@@ -200,6 +244,7 @@ def get_client_name(request):
         status='paid',
         amount__gt=0,
     ).exists()
+    admission_date = get_client_admission_date(client)
     last_cleared_payment = get_last_cleared_month(client)
 
     return JsonResponse({
@@ -208,6 +253,8 @@ def get_client_name(request):
         'roll': client.roll,
         'monthly_fee': str(client.monthly_fee),
         'status': client.status,
+        'admission_date': admission_date.isoformat() if admission_date else '',
+        'admission_date_display': admission_date.strftime('%d %b %Y') if admission_date else '',
         'pause_month': client.pause_month,
         'status_comment': client.status_comment,
         'is_paused_for_month': is_paused_for_month,
@@ -221,6 +268,7 @@ def get_client_name(request):
         'last_cleared_date': last_cleared_payment.date.isoformat() if last_cleared_payment else '',
         'admission_fee_paid': admission_fee_paid,
         'due_payments': due_payments,
+        'due_count': len(due_payments),
     })
 
 @login_required
@@ -263,10 +311,22 @@ def add_student(request):
         has_students = Client.objects.filter(batch=client.batch).exists()
         manual_roll = (client_form.cleaned_data.get('roll') or '').strip()
         client.roll = get_next_roll_value(client.batch) if has_students else manual_roll or get_next_roll_value(client.batch)
+        tuition_fee = client_form.cleaned_data.get('tuition_fee')
         client.save()
         admission_fee = client_form.cleaned_data.get('admission_fee')
         if admission_fee:
-            Payment.objects.create(client=client, fee_type='admission', amount=admission_fee, date=date.today(), status='paid')
+            payment = Payment.objects.create(client=client, fee_type='admission', amount=admission_fee, date=date.today(), status='paid')
+            notify_payment_received(payment)
+        if tuition_fee:
+            payment = Payment.objects.create(
+                client=client,
+                fee_type='monthly',
+                amount=tuition_fee,
+                payment_month=date.today().strftime('%Y-%m'),
+                date=date.today(),
+                status='paid',
+            )
+            notify_payment_received(payment)
         return redirect('client_list')
     context = {
         'client_form': client_form,
@@ -377,30 +437,7 @@ def client_delete(request, pk):
 
 @login_required
 def manage_payment(request):
-    payment_form = PaymentForm(request.POST or None)
-    if request.method == 'POST' and payment_form.is_valid():
-        batch = payment_form.cleaned_data['batch']
-        roll = payment_form.cleaned_data['roll']
-        name = payment_form.cleaned_data['name']
-        amount = payment_form.cleaned_data['amount']
-        payment_month = payment_form.cleaned_data['payment_month']
-        date_val = payment_form.cleaned_data['date']
-        status = payment_form.cleaned_data['status']
-        fee_type = payment_form.cleaned_data['fee_type']
-        client, error = resolve_payment_client(batch, roll=roll, name=name)
-        if client:
-            if not add_duplicate_payment_error(payment_form, client, fee_type, payment_month):
-                payment = Payment(client=client, fee_type=fee_type, amount=amount, payment_month=payment_month, date=date_val, status=status)
-                payment.save()
-                return redirect('payment_list')
-        else:
-            payment_form.add_error('roll' if roll else 'name', error)
-    payments = Payment.objects.all().order_by('-date')
-    context = {
-        'payment_form': payment_form,
-        'payments': payments,
-    }
-    return render(request, 'coaching/manage_payment.html', context)
+    return redirect('payment_list')
 
 
 @login_required
@@ -499,12 +536,12 @@ class PaymentListView(LoginRequiredMixin, ListView):
             amount = form.cleaned_data['amount']
             payment_month = form.cleaned_data['payment_month']
             date_val = form.cleaned_data['date']
-            status = form.cleaned_data['status']
             fee_type = form.cleaned_data['fee_type']
             client, error = resolve_payment_client(batch, roll=roll, name=name)
             if client:
                 if not add_duplicate_payment_error(form, client, fee_type, payment_month):
-                    Payment.objects.create(client=client, fee_type=fee_type, amount=amount, payment_month=payment_month, date=date_val, status=status)
+                    payment = Payment.objects.create(client=client, fee_type=fee_type, amount=amount, payment_month=payment_month, date=date_val, status='paid')
+                    notify_payment_received(payment)
                     return redirect('payment_list')
             else:
                 form.add_error('roll' if roll else 'name', error)
@@ -516,9 +553,12 @@ class PaymentListView(LoginRequiredMixin, ListView):
 @login_required
 def payment_edit(request, pk):
     payment = get_object_or_404(Payment.objects.select_related('client', 'client__batch'), pk=pk)
+    old_status = payment.status
     form = PaymentEditForm(request.POST or None, instance=payment)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        payment = form.save()
+        if old_status != 'paid':
+            notify_payment_received(payment)
         next_url = request.POST.get('next') or request.GET.get('next')
         if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
             return redirect(next_url)

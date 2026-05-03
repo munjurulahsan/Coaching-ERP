@@ -5,6 +5,21 @@ from . import views
 urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='coaching/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path(
+        'password-change/',
+        auth_views.PasswordChangeView.as_view(
+            template_name='coaching/password_change.html',
+            success_url='done/',
+        ),
+        name='password_change',
+    ),
+    path(
+        'password-change/done/',
+        auth_views.PasswordChangeDoneView.as_view(
+            template_name='coaching/password_change_done.html',
+        ),
+        name='password_change_done',
+    ),
     path('', views.home, name='home'),
     path('get_client_name/', views.get_client_name, name='get_client_name'),
     path('get_next_roll/', views.get_next_roll, name='get_next_roll'),

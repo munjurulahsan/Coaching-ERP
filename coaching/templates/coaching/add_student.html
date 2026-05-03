@@ -7,19 +7,35 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .btn-custom { background: linear-gradient(45deg, #ff6b6b, #feca57); border: none; border-radius: 25px; color: white; }
-        .btn-custom:hover { background: linear-gradient(45deg, #feca57, #ff6b6b); color: white; }
-        .form-control { border-radius: 10px; }
+        body { background: #f4f7fb; min-height: 100vh; color: #1f2937; }
+        .page-header,
+        .form-panel { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06); }
+        .page-header { padding: 20px 22px; }
+        .form-panel { padding: 24px; }
+        .page-title { font-size: 2rem; font-weight: 800; }
+        .form-control, .form-select, .btn { border-radius: 8px; }
+        .btn-main { background: #0d6efd; border: none; color: #ffffff; }
+        .btn-main:hover { background: #0b5ed7; color: #ffffff; }
+        .btn-outline-soft { border-color: #d7e2f2; color: #1f2937; }
+        .btn-outline-soft:hover { background: #eef4ff; border-color: #bcd2f7; color: #0d6efd; }
     </style>
 </head>
 <body>
     <div class="container py-5">
+        <div class="page-header d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="page-title mb-1"><i class="fas fa-user-plus text-primary"></i> Add Student</h1>
+                <p class="text-muted mb-0">Enroll one student and optionally record admission or tuition fee.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'import_students' %}" class="btn btn-outline-soft"><i class="fas fa-file-import me-2"></i>Import List</a>
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary"><i class="fas fa-home me-2"></i>Dashboard</a>
+            </div>
+        </div>
+
         <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card p-4">
-                    <h2 class="text-center mb-4"><i class="fas fa-user-plus text-primary"></i> Add New Student (Client)</h2>
+            <div class="col-lg-8">
+                <div class="form-panel">
                     <form method="post">
                         {% csrf_token %}
                         <div class="row">
@@ -41,29 +57,41 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                {{ client_form.email.label_tag }}
-                                {{ client_form.email }}
-                                {{ client_form.email.errors }}
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 {{ client_form.phone.label_tag }}
                                 {{ client_form.phone }}
                                 {{ client_form.phone.errors }}
                             </div>
+                            <div class="col-md-6 mb-3">
+                                {{ client_form.guardian_phone.label_tag }}
+                                {{ client_form.guardian_phone }}
+                                {{ client_form.guardian_phone.errors }}
+                            </div>
                         </div>
                         <div class="mb-3">
-                            {{ client_form.admission_fee.label_tag }}
-                            {{ client_form.admission_fee }}
-                            {{ client_form.admission_fee.errors }}
+                            {{ client_form.monthly_fee.label_tag }}
+                            {{ client_form.monthly_fee }}
+                            <div class="form-text">Ei fixed monthly fee payment page-e monthly payment select korle auto fill hobe.</div>
+                            {{ client_form.monthly_fee.errors }}
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-custom btn-lg"><i class="fas fa-plus"></i> Add Student</button>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ client_form.admission_fee.label_tag }}
+                                {{ client_form.admission_fee }}
+                                <div class="form-text">Only admission fee diye-o student vorti kora jabe.</div>
+                                {{ client_form.admission_fee.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ client_form.tuition_fee.label_tag }}
+                                {{ client_form.tuition_fee }}
+                                <div class="form-text">Running month-er payment ekhanei nite chaile din. Fixed monthly fee change hobe na.</div>
+                                {{ client_form.tuition_fee.errors }}
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+                            <a href="{% url 'client_list' %}" class="btn btn-outline-soft">Student List</a>
+                            <button type="submit" class="btn btn-main btn-lg"><i class="fas fa-plus me-2"></i>Add Student</button>
                         </div>
                     </form>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'import_students' %}" class="btn btn-outline-primary me-2"><i class="fas fa-file-import"></i> Import Student List</a>
-                        <a href="{% url 'home' %}" class="btn btn-outline-secondary"><i class="fas fa-home"></i> Back to Dashboard</a>
-                    </div>
                 </div>
             </div>
         </div>
@@ -77,7 +105,8 @@
         function updateRollField() {
             const batchId = batchField.value;
             if (batchId) {
-                fetch(`/get_next_roll/?batch_id=${batchId}`)
+                const nextRollUrl = "{% url 'get_next_roll' %}";
+                fetch(`${nextRollUrl}?batch_id=${batchId}`)
                     .then(response => response.json())
                     .then(data => {
                         rollField.value = data.next_roll;

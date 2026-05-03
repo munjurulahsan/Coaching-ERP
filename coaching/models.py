@@ -1,5 +1,6 @@
 from django.db import models
 from django.db.models import Sum
+from datetime import date
 
 class Batch(models.Model):
     name = models.CharField(max_length=100)
@@ -36,6 +37,8 @@ class Client(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True, blank=True, null=True)
     phone = models.CharField(max_length=15)
+    guardian_phone = models.CharField(max_length=15, blank=True)
+    admission_date = models.DateField(default=date.today)
     goals = models.TextField(blank=True)
     monthly_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)

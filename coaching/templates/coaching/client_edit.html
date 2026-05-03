@@ -5,20 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Student Profile</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f4f7fb; color: #1f2937; min-height: 100vh; }
+        .page-header,
+        .form-panel { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06); }
+        .page-header { padding: 20px 22px; }
+        .form-panel { padding: 24px; }
+        .page-title { font-size: 2rem; font-weight: 800; }
+        .form-control, .form-select, .btn { border-radius: 8px; }
+    </style>
 </head>
 <body>
     <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="page-header d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
             <div>
-                <h1>Edit {{ client.name }}</h1>
-                <p class="text-muted">Update student details and batch assignment.</p>
+                <h1 class="page-title mb-1">Edit {{ client.name }}</h1>
+                <p class="text-muted mb-0">Update student details, batch assignment, and pause status.</p>
             </div>
             <div>
-                <a href="{% url 'client_profile' client.pk %}" class="btn btn-secondary">Back to Profile</a>
+                <a href="{% url 'client_profile' client.pk %}" class="btn btn-outline-secondary">Back to Profile</a>
             </div>
         </div>
 
-        <div class="card p-4">
+        <div class="form-panel">
             <form method="post">
                 {% csrf_token %}
                 <div class="row g-3">
@@ -33,9 +42,14 @@
                         {{ form.email.errors }}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Phone</label>
+                        <label class="form-label">Student's Number</label>
                         {{ form.phone }}
                         {{ form.phone.errors }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Guardian Number</label>
+                        {{ form.guardian_phone }}
+                        {{ form.guardian_phone.errors }}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Roll</label>
@@ -69,7 +83,8 @@
                     </div>
                 </div>
 
-                <div class="mt-4">
+                <div class="d-flex flex-wrap gap-2 justify-content-end mt-4">
+                    <a href="{% url 'client_profile' client.pk %}" class="btn btn-outline-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
             </form>

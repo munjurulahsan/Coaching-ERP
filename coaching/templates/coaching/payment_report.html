@@ -99,7 +99,11 @@
                 <h1 class="page-title mb-1">Payment Report</h1>
                 <p class="text-muted mb-0">Track collections, dues, and student payment status from one place.</p>
             </div>
-            <a href="{% url 'home' %}" class="btn btn-outline-secondary">Dashboard</a>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'payment_list' %}" class="btn btn-primary">Take Payment</a>
+                <a href="{% url 'payment_report' %}" class="btn btn-outline-secondary">Reset</a>
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">Dashboard</a>
+            </div>
         </div>
 
         <form method="get" class="filter-panel row g-3 mb-4 no-print">

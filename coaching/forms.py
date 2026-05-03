@@ -3,6 +3,19 @@ from datetime import date
 from .models import Client, Payment, Batch
 
 
+def clean_bd_mobile_number(number):
+    number = (number or '').strip().replace(' ', '').replace('-', '')
+    if not number:
+        return ''
+    if number.startswith('+88'):
+        number = number[3:]
+    if number.startswith('8801') and len(number) == 13 and number.isdigit():
+        return number
+    if number.startswith('01') and len(number) == 11 and number.isdigit():
+        return number
+    raise forms.ValidationError('Enter a valid Bangladesh mobile number, e.g. 017XXXXXXXX or 88017XXXXXXXX.')
+
+
 class BulkStudentImportForm(forms.Form):
     batch = forms.ModelChoiceField(
         queryset=Batch.objects.all(),
@@ -20,30 +33,41 @@ class BulkStudentImportForm(forms.Form):
 
 class ClientForm(forms.ModelForm):
     roll = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Roll number', 'readonly': 'readonly', 'id': 'id_client_roll'}))
-    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter email'}))
     admission_fee = forms.DecimalField(required=False, min_value=0, max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Admission fee', 'step': '0.01'}))
+    tuition_fee = forms.DecimalField(required=False, min_value=0, max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Tuition fee for running month', 'step': '0.01'}))
 
     class Meta:
         model = Client
-        fields = ['name', 'email', 'phone', 'batch']
+        fields = ['name', 'phone', 'guardian_phone', 'monthly_fee', 'batch']
+        labels = {
+            'phone': "Student's Number",
+            'guardian_phone': 'Guardian Number',
+            'monthly_fee': 'Monthly Fee',
+        }
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter client name'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter email'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter phone number'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter student name'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter student's number"}),
+            'guardian_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter guardian number'}),
+            'monthly_fee': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Fixed monthly fee', 'step': '0.01'}),
             'batch': forms.Select(attrs={'class': 'form-control', 'id': 'id_client_batch'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    def clean_email(self):
-        return self.cleaned_data.get('email') or None
+        self.fields['guardian_phone'].required = True
+        self.fields['monthly_fee'].required = True
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '').strip()
         if Client.objects.filter(phone=phone).exists():
             raise forms.ValidationError('A student with this phone number already exists.')
         return phone
+
+    def clean_guardian_phone(self):
+        return clean_bd_mobile_number(self.cleaned_data.get('guardian_phone'))
+
+    def clean_monthly_fee(self):
+        return self.cleaned_data.get('monthly_fee') or 0
 
 class PaymentForm(forms.Form):
     batch = forms.ModelChoiceField(queryset=Batch.objects.all(), widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_batch'}))
@@ -57,7 +81,6 @@ class PaymentForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control', 'type': 'month'}),
     )
     date = forms.DateField(label='Payment Date', initial=date.today, widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
-    status = forms.ChoiceField(choices=[('pending', 'Pending'), ('paid', 'Paid'), ('overdue', 'Overdue')], widget=forms.Select(attrs={'class': 'form-control'}))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -96,11 +119,16 @@ class ClientEditForm(forms.ModelForm):
 
     class Meta:
         model = Client
-        fields = ['name', 'email', 'phone', 'monthly_fee', 'batch', 'status', 'pause_month', 'status_comment']
+        fields = ['name', 'email', 'phone', 'guardian_phone', 'monthly_fee', 'batch', 'status', 'pause_month', 'status_comment']
+        labels = {
+            'phone': "Student's Number",
+            'guardian_phone': 'Guardian Number',
+        }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter client name'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter email'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter phone number'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter student's number"}),
+            'guardian_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter guardian number'}),
             'monthly_fee': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Student monthly fee', 'step': '0.01'}),
             'batch': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
@@ -129,3 +157,6 @@ class ClientEditForm(forms.ModelForm):
         if existing_students.exists():
             raise forms.ValidationError('A student with this phone number already exists.')
         return phone
+
+    def clean_guardian_phone(self):
+        return clean_bd_mobile_number(self.cleaned_data.get('guardian_phone'))
