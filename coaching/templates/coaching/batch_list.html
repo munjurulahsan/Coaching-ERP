@@ -36,6 +36,7 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'home' %}" class="btn btn-outline-secondary">Dashboard</a>
+                <a href="{% url 'batch_notice' %}" class="btn btn-outline-primary">Send Notice</a>
                 <a href="{% url 'batch_create' %}" class="btn btn-primary">Create Batch</a>
             </div>
         </div>
@@ -65,6 +66,7 @@
                                 <div class="d-flex flex-wrap gap-2">
                                     <a href="{% url 'client_list' %}?batch={{ item.batch.pk }}" class="btn btn-sm btn-outline-secondary">Students</a>
                                     <a href="{% url 'payment_report' %}?batch={{ item.batch.pk }}" class="btn btn-sm btn-outline-success">Report</a>
+                                    <a href="{% url 'batch_notice' %}?batch={{ item.batch.pk }}" class="btn btn-sm btn-outline-info">Notice</a>
                                     <a href="{% url 'batch_edit' item.batch.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <form method="post" action="{% url 'batch_delete' item.batch.pk %}" onsubmit="return confirm('Delete {{ item.batch.name|escapejs }}? This will also delete all students and payments in this batch.');">
                                         {% csrf_token %}

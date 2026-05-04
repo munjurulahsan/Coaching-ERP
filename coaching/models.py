@@ -97,3 +97,44 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.get_fee_type_display()} of {self.amount} by {self.client.name}"
+
+
+class BatchNotice(models.Model):
+    RECIPIENT_CHOICES = [
+        ('guardian', 'Guardian numbers'),
+        ('student', 'Student numbers'),
+        ('both', 'Student and guardian numbers'),
+    ]
+
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
+    message = models.TextField()
+    recipient_type = models.CharField(max_length=20, choices=RECIPIENT_CHOICES, default='guardian')
+    active_students_only = models.BooleanField(default=True)
+    total_recipients = models.PositiveIntegerField(default=0)
+    sent_count = models.PositiveIntegerField(default=0)
+    failed_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notice to {self.batch.name} on {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class BatchNoticeRecipient(models.Model):
+    notice = models.ForeignKey(BatchNotice, related_name='recipients', on_delete=models.CASCADE)
+    client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    phone_number = models.CharField(max_length=15)
+    recipient_label = models.CharField(max_length=20)
+    sent = models.BooleanField(default=False)
+    gateway_status_code = models.PositiveIntegerField(blank=True, null=True)
+    gateway_response = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['client__roll', 'client__name', 'recipient_label']
+
+    def __str__(self):
+        status = 'Sent' if self.sent else 'Failed'
+        return f"{status}: {self.client.name} ({self.phone_number})"

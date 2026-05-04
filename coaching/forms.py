@@ -1,6 +1,6 @@
 from django import forms
 from datetime import date
-from .models import Client, Payment, Batch
+from .models import BatchNotice, Client, Payment, Batch
 
 
 def clean_bd_mobile_number(number):
@@ -111,6 +111,33 @@ class BatchForm(forms.ModelForm):
             'time': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch schedule, e.g. 9:00 AM - 11:00 AM'}),
             'start_roll': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First roll, e.g. 1 or M-27101'}),
         }
+
+
+class BatchNoticeForm(forms.ModelForm):
+    class Meta:
+        model = BatchNotice
+        fields = ['batch', 'recipient_type', 'active_students_only', 'message']
+        labels = {
+            'recipient_type': 'Send To',
+            'active_students_only': 'Active students only',
+        }
+        widgets = {
+            'batch': forms.Select(attrs={'class': 'form-control'}),
+            'recipient_type': forms.Select(attrs={'class': 'form-control'}),
+            'active_students_only': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'message': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'maxlength': 1000,
+                'placeholder': 'Write your notice message',
+            }),
+        }
+
+    def clean_message(self):
+        message = (self.cleaned_data.get('message') or '').strip()
+        if not message:
+            raise forms.ValidationError('Notice message cannot be empty.')
+        return message
 
 
 class ClientEditForm(forms.ModelForm):

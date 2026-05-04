@@ -43,6 +43,7 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'payment_list' %}" class="btn btn-main"><i class="fas fa-credit-card me-2"></i>Take Payment</a>
+                <a href="{% url 'batch_notice' %}" class="btn btn-outline-soft"><i class="fas fa-paper-plane me-2"></i>Notice</a>
                 <a href="{% url 'client_list' %}" class="btn btn-outline-soft"><i class="fas fa-users me-2"></i>Students</a>
                 <a href="{% url 'payment_report' %}" class="btn btn-outline-soft"><i class="fas fa-file-invoice me-2"></i>Reports</a>
                 <a href="{% url 'password_change' %}" class="btn btn-outline-soft"><i class="fas fa-key me-2"></i>Change Password</a>
@@ -120,10 +121,10 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <div class="card action-card p-4">
-                    <div class="action-icon mb-3"><i class="fas fa-users"></i></div>
-                    <h5 class="fw-bold">Students</h5>
-                    <p class="text-muted">Search profiles and update status.</p>
-                    <a href="{% url 'client_list' %}" class="btn btn-main btn-sm">Open</a>
+                    <div class="action-icon mb-3"><i class="fas fa-paper-plane"></i></div>
+                    <h5 class="fw-bold">Batch Notice</h5>
+                    <p class="text-muted">Send SMS notices to a full batch.</p>
+                    <a href="{% url 'batch_notice' %}" class="btn btn-main btn-sm">Send</a>
                 </div>
             </div>
         </div>

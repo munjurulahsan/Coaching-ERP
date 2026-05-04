@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
@@ -10,9 +11,9 @@ import calendar
 import re
 from django.http import JsonResponse
 from django.utils.http import url_has_allowed_host_and_scheme
-from .models import Coach, Client, Session, Payment, Batch
-from .forms import ClientForm, PaymentForm, PaymentEditForm, BatchForm, ClientEditForm, BulkStudentImportForm
-from .sms import notify_payment_received
+from .models import BatchNotice, BatchNoticeRecipient, Coach, Client, Session, Payment, Batch
+from .forms import BatchNoticeForm, ClientForm, PaymentForm, PaymentEditForm, BatchForm, ClientEditForm, BulkStudentImportForm
+from .sms import notify_payment_received, send_sms_detailed
 
 
 def format_payment_month(payment):
@@ -179,6 +180,15 @@ def get_next_roll_value(batch):
             roll_numbers.append(int(match.group(1)))
     next_number = max(roll_numbers) + 1
     return f'{prefix}{str(next_number).zfill(number_width)}'
+
+
+def notice_recipient_numbers(student, recipient_type):
+    recipients = []
+    if recipient_type in {'student', 'both'} and student.phone:
+        recipients.append(('student', student.phone))
+    if recipient_type in {'guardian', 'both'} and student.guardian_phone:
+        recipients.append(('guardian', student.guardian_phone))
+    return recipients
 
 
 @login_required
@@ -473,6 +483,74 @@ def batch_delete(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
     batch.delete()
     return redirect('batch_list')
+
+
+@login_required
+def batch_notice(request):
+    initial = {}
+    if request.GET.get('batch'):
+        initial['batch'] = request.GET.get('batch')
+    form = BatchNoticeForm(request.POST or None, initial=initial)
+    recent_notices = (
+        BatchNotice.objects
+        .select_related('batch')
+        .prefetch_related('recipients__client')
+        .all()[:10]
+    )
+
+    if request.method == 'POST' and form.is_valid():
+        notice = form.save(commit=False)
+        students = Client.objects.filter(batch=notice.batch).order_by('roll', 'name')
+        if notice.active_students_only:
+            students = students.filter(status='active')
+
+        recipient_rows = []
+        seen_numbers = set()
+        for student in students:
+            for recipient_label, phone_number in notice_recipient_numbers(student, notice.recipient_type):
+                normalized_number = (phone_number or '').strip().replace(' ', '').replace('-', '')
+                if not normalized_number or normalized_number in seen_numbers:
+                    continue
+                seen_numbers.add(normalized_number)
+                recipient_rows.append((student, recipient_label, normalized_number))
+
+        if not recipient_rows:
+            form.add_error(None, 'No valid phone numbers found for the selected batch.')
+        else:
+            notice.total_recipients = len(recipient_rows)
+            notice.save()
+            sent_count = 0
+            failed_count = 0
+            for student, recipient_label, phone_number in recipient_rows:
+                sms_result = send_sms_detailed(phone_number, notice.message)
+                sent = sms_result['sent']
+                if sent:
+                    sent_count += 1
+                else:
+                    failed_count += 1
+                BatchNoticeRecipient.objects.create(
+                    notice=notice,
+                    client=student,
+                    phone_number=sms_result['phone_number'],
+                    recipient_label=recipient_label,
+                    sent=sent,
+                    gateway_status_code=sms_result['status_code'],
+                    gateway_response=sms_result['response'][:1000],
+                )
+
+            notice.sent_count = sent_count
+            notice.failed_count = failed_count
+            notice.save(update_fields=['sent_count', 'failed_count'])
+            messages.success(
+                request,
+                f'Notice processed for {notice.batch.name}: {sent_count} sent, {failed_count} failed.',
+            )
+            return redirect('batch_notice')
+
+    return render(request, 'coaching/batch_notice.html', {
+        'form': form,
+        'recent_notices': recent_notices,
+    })
 
 
 class CoachListView(LoginRequiredMixin, ListView):
