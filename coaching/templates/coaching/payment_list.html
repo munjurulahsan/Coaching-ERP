@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,12 +23,17 @@
         .info-tile { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; }
         .info-label { color: #64748b; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; }
         .info-value { color: #111827; font-weight: 800; }
+        .total-preview { background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; border-radius: 8px; padding: 10px 12px; font-weight: 800; }
+        .month-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; background: #eef4ff; color: #1d4ed8; font-weight: 700; margin: 0 6px 6px 0; }
+        .month-chip.is-paid { background: #fee2e2; color: #b91c1c; }
+        .month-chip.is-paused { background: #fef3c7; color: #92400e; }
         .due-list { max-height: 190px; overflow: auto; }
         .due-row { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #e5e7eb; padding: 7px 0; }
         .table thead { background: #f8fafc; }
         .table tbody tr:hover { background: #f9fbff; }
         .metric-badge { background: #f3f4f6; color: #111827; border-radius: 999px; padding: 6px 10px; font-weight: 700; }
     </style>
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="container py-5">
@@ -83,12 +89,22 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                {{ payment_form.months_to_pay.label_tag }}
+                                {{ payment_form.months_to_pay }}
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 {{ payment_form.date.label_tag }}
                                 {{ payment_form.date }}
                             </div>
+                        </div>
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ payment_form.fee_type.label_tag }}
                                 {{ payment_form.fee_type }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Total Collection</label>
+                                <div class="total-preview" id="totalCollectionPreview">৳0.00</div>
                             </div>
                         </div>
                         <div class="d-grid">
@@ -117,6 +133,7 @@
                             </div>
                             <div class="small text-muted mt-2" id="studentPauseInfo"></div>
                             <div class="small mt-2" id="selectedMonthInfo"></div>
+                            <div class="small mt-2" id="selectedMonthRangeInfo"></div>
                             <div class="mt-3">
                                 <div class="fw-bold small mb-2">Due Months Since Admission</div>
                                 <div id="previousDueHistory" class="small due-list"></div>
@@ -164,7 +181,7 @@
                                         <td>{{ payment.payment_month|default:"-" }}</td>
                                         <td>৳{{ payment.amount }}</td>
                                         <td>{{ payment.date }}</td>
-                                        <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-light">Edit</a></td>
+                                        <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-light">Edit/Delete</a></td>
                                     </tr>
                                 {% empty %}
                                     <tr>
@@ -194,16 +211,35 @@
             updateStudentPaymentInfo();
         }
 
+        function getMonthsToPay() {
+            const rawValue = Number(document.getElementById('id_months_to_pay').value || 1);
+            return Math.min(Math.max(rawValue || 1, 1), 24);
+        }
+
+        function updateTotalPreview() {
+            const amount = Number(document.getElementById('id_amount').value || 0);
+            const feeType = document.getElementById('id_fee_type').value;
+            const monthsInput = document.getElementById('id_months_to_pay');
+            const paymentMonthInput = document.getElementById('id_payment_month');
+            const isMonthly = feeType === 'monthly';
+            monthsInput.disabled = !isMonthly;
+            paymentMonthInput.required = isMonthly;
+            const months = isMonthly ? getMonthsToPay() : 1;
+            document.getElementById('totalCollectionPreview').textContent = `৳${(amount * months).toFixed(2)}`;
+        }
+
         function updateStudentPaymentInfo() {
             const batchId = document.getElementById('id_batch').value;
             const roll = document.getElementById('id_roll').value;
             const name = document.getElementById('id_name').value;
             const feeType = document.getElementById('id_fee_type').value;
             const paymentMonth = document.getElementById('id_payment_month').value;
+            const monthsToPay = getMonthsToPay();
             const infoBox = document.getElementById('studentPaymentInfo');
             const infoTitle = document.getElementById('studentInfoTitle');
             const pauseInfo = document.getElementById('studentPauseInfo');
             const selectedMonthInfo = document.getElementById('selectedMonthInfo');
+            const selectedMonthRangeInfo = document.getElementById('selectedMonthRangeInfo');
             const admissionFeeInfo = document.getElementById('admissionFeeInfo');
             const admissionDateInfo = document.getElementById('admissionDateInfo');
             const lastClearedMonthInfo = document.getElementById('lastClearedMonthInfo');
@@ -211,6 +247,7 @@
             const matchList = document.getElementById('studentMatchList');
             const previousDueHistory = document.getElementById('previousDueHistory');
             const savePaymentButton = document.getElementById('savePaymentButton');
+            updateTotalPreview();
 
             if (batchId && (roll || name)) {
                 const params = new URLSearchParams({
@@ -218,6 +255,7 @@
                     roll: roll,
                     name: name,
                     payment_month: paymentMonth,
+                    months_to_pay: monthsToPay,
                     fee_type: feeType,
                 });
                 const clientLookupUrl = "{% url 'get_client_name' %}";
@@ -237,6 +275,7 @@
                             }
                             pauseInfo.textContent = '';
                             selectedMonthInfo.textContent = '';
+                            selectedMonthRangeInfo.textContent = '';
                             admissionFeeInfo.textContent = '';
                             lastClearedMonthInfo.textContent = '';
                             admissionDateInfo.textContent = '-';
@@ -248,6 +287,7 @@
                         document.getElementById('id_roll').value = data.roll;
                         if (feeType === 'monthly') {
                             document.getElementById('id_amount').value = data.monthly_fee || '';
+                            updateTotalPreview();
                         }
                         infoBox.classList.remove('d-none');
                         infoTitle.textContent = `${data.name} - Roll ${data.roll}`;
@@ -262,7 +302,10 @@
                         pauseInfo.textContent = data.is_paused_for_month
                             ? `Paused for ${data.pause_month}. ${data.status_comment || ''}`
                             : '';
-                        if (data.selected_month_duplicate) {
+                        if (feeType !== 'monthly') {
+                            selectedMonthInfo.innerHTML = '<span class="badge bg-secondary">Admission payment does not need a month range</span>';
+                            selectedMonthRangeInfo.textContent = '';
+                        } else if (data.selected_month_duplicate) {
                             selectedMonthInfo.innerHTML = `<span class="badge bg-danger">This month already has a ${escapeHtml(data.selected_month_duplicate_status)} payment entry - ৳${escapeHtml(data.selected_month_duplicate_amount)}</span>`;
                             savePaymentButton.disabled = true;
                         } else if (!paymentMonth) {
@@ -274,9 +317,23 @@
                         } else {
                             selectedMonthInfo.innerHTML = '<span class="badge bg-danger">No payment found for this month</span>';
                         }
+                        if (feeType === 'monthly' && data.selected_months && data.selected_months.length) {
+                            const hasDuplicate = data.selected_months.some(month => month.duplicate);
+                            selectedMonthRangeInfo.innerHTML = data.selected_months.map(month => {
+                                const chipClass = month.duplicate || month.paid ? 'month-chip is-paid' : (month.paused ? 'month-chip is-paused' : 'month-chip');
+                                const icon = month.duplicate || month.paid ? 'fa-circle-exclamation' : (month.paused ? 'fa-pause-circle' : 'fa-calendar-check');
+                                const suffix = month.duplicate ? ` - paid ৳${escapeHtml(month.duplicate_amount)}` : (month.paused ? ' - paused' : '');
+                                return `<span class="${chipClass}"><i class="fas ${icon}"></i>${escapeHtml(month.month)}${suffix}</span>`;
+                            }).join('');
+                            if (hasDuplicate) {
+                                savePaymentButton.disabled = true;
+                            }
+                        } else {
+                            selectedMonthRangeInfo.textContent = '';
+                        }
                         admissionFeeInfo.innerHTML = data.admission_fee_paid
-                            ? '<span class="text-success">Paid</span>'
-                            : '<span class="text-danger">Due</span>';
+                            ? `<span class="text-success">Paid</span><div class="small text-muted">Paid ৳${escapeHtml(data.admission_paid_amount || '0')} of ৳${escapeHtml(data.admission_fee_total || '0')}</div>`
+                            : `<span class="text-danger">Due ৳${escapeHtml(data.admission_due_amount || '0')}</span><div class="small text-muted">Paid ৳${escapeHtml(data.admission_paid_amount || '0')} of ৳${escapeHtml(data.admission_fee_total || '0')}</div>`;
                         if (data.due_payments.length) {
                             previousDueHistory.innerHTML = data.due_payments.map(payment =>
                                 `<div class="due-row"><span><i class="fas fa-calendar-xmark text-danger me-1"></i>${escapeHtml(payment.month)}</span><strong>৳${escapeHtml(payment.amount)}</strong></div>`
@@ -288,6 +345,7 @@
             } else {
                 document.getElementById('id_amount').value = '';
                 savePaymentButton.disabled = false;
+                updateTotalPreview();
                 infoBox.classList.add('d-none');
             }
         }
@@ -301,6 +359,8 @@
             updateStudentPaymentInfo();
         });
         document.getElementById('id_payment_month').addEventListener('change', updateStudentPaymentInfo);
+        document.getElementById('id_months_to_pay').addEventListener('input', updateStudentPaymentInfo);
+        document.getElementById('id_amount').addEventListener('input', updateTotalPreview);
         document.getElementById('id_batch').addEventListener('change', function() {
             updateStudentPaymentInfo();
         });
@@ -311,6 +371,7 @@
                 selectStudentRoll(button.dataset.roll, button.dataset.name);
             }
         });
+        updateTotalPreview();
     </script>
 </body>
 </html>

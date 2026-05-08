@@ -24,6 +24,24 @@ DEBUG=False
 ALLOWED_HOSTS=mizanurrahman.site,www.mizanurrahman.site
 CSRF_TRUSTED_ORIGINS=https://mizanurrahman.site,https://www.mizanurrahman.site
 FORCE_SCRIPT_NAME=/erp
+SECURE_SSL_REDIRECT=False
+
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_EMAIL=your-email@example.com
+DJANGO_SUPERUSER_PASSWORD=choose-a-strong-owner-password
+
+STAFF_USERNAME=Munna
+STAFF_PASSWORD=Munna123
+
+SMS_ENABLED=True
+SMS_API_URL=https://xlahr.pro.bd/api.php
+SMS_API_KEY=your-sms-api-key
+SMS_API_KEY_PARAM=key
+SMS_TO_PARAM=number
+SMS_MESSAGE_PARAM=msg
+SMS_EXTRA_PARAMS=type=sms
+SMS_METHOD=GET
+SMS_TIMEOUT_SECONDS=10
 ```
 
 ## Upload files
@@ -52,6 +70,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py collectstatic --no-input
 python manage.py create_admin
+python manage.py create_staff
 ```
 
 If you do not have Terminal access, use the **Execute python script** section:
@@ -70,12 +89,14 @@ cpanel_setup.py
 
 Then click **Run Script**.
 
-For `create_admin`, add these environment variables first if you want automatic admin creation:
+For `create_admin` and `create_staff`, add these environment variables first if you want automatic login creation:
 
 ```text
 DJANGO_SUPERUSER_USERNAME=admin
 DJANGO_SUPERUSER_EMAIL=your-email@example.com
 DJANGO_SUPERUSER_PASSWORD=choose-a-strong-password
+STAFF_USERNAME=Munna
+STAFF_PASSWORD=Munna123
 ```
 
 ## Restart app
@@ -85,9 +106,22 @@ In cPanel **Setup Python App**, click **Restart** after installing dependencies 
 Then open:
 
 ```text
-https://mizanurrahman.site/
-https://mizanurrahman.site/admin/
+https://mizanurrahman.site/erp/
+https://mizanurrahman.site/erp/admin/
 ```
+
+## Login roles
+
+Owner/admin login uses the Django superuser credentials. Owner can create, edit, and delete batches and can see monthly/total collection.
+
+Staff login uses:
+
+```text
+Username: Munna
+Password: Munna123
+```
+
+Staff can use the same daily operations, but cannot create/edit/delete batches and cannot see monthly/total collection.
 
 ## Change login password
 

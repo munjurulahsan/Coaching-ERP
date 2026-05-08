@@ -1,14 +1,22 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coaches</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
-<body>
-    <h1>Coaches</h1>
-    <ul>
-        {% for coach in object_list %}
-            <li>{{ coach.name }} - {{ coach.specialization }}</li>
-        {% endfor %}
-    </ul>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="card p-4">
+            <h1 class="page-title mb-3">Coaches</h1>
+            <ul class="list-group">
+                {% for coach in object_list %}
+                    <li class="list-group-item">{{ coach.name }} - {{ coach.specialization }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
 </body>
 </html>

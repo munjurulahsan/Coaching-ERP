@@ -33,22 +33,24 @@ class BulkStudentImportForm(forms.Form):
 
 class ClientForm(forms.ModelForm):
     roll = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Roll number', 'readonly': 'readonly', 'id': 'id_client_roll'}))
-    admission_fee = forms.DecimalField(required=False, min_value=0, max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Admission fee', 'step': '0.01'}))
+    admission_fee_paid = forms.DecimalField(required=False, min_value=0, max_digits=10, decimal_places=2, label='Admission Fee Paid Now', widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Amount paid now', 'step': '0.01'}))
     tuition_fee = forms.DecimalField(required=False, min_value=0, max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Tuition fee for running month', 'step': '0.01'}))
 
     class Meta:
         model = Client
-        fields = ['name', 'phone', 'guardian_phone', 'monthly_fee', 'batch']
+        fields = ['name', 'phone', 'guardian_phone', 'monthly_fee', 'admission_fee_total', 'batch']
         labels = {
             'phone': "Student's Number",
             'guardian_phone': 'Guardian Number',
             'monthly_fee': 'Monthly Fee',
+            'admission_fee_total': 'Admission Fee Total',
         }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter student name'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter student's number"}),
             'guardian_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter guardian number'}),
             'monthly_fee': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Fixed monthly fee', 'step': '0.01'}),
+            'admission_fee_total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Required admission fee', 'step': '0.01'}),
             'batch': forms.Select(attrs={'class': 'form-control', 'id': 'id_client_batch'}),
         }
 
@@ -56,6 +58,7 @@ class ClientForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['guardian_phone'].required = True
         self.fields['monthly_fee'].required = True
+        self.fields['admission_fee_total'].required = False
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '').strip()
@@ -69,16 +72,26 @@ class ClientForm(forms.ModelForm):
     def clean_monthly_fee(self):
         return self.cleaned_data.get('monthly_fee') or 0
 
+    def clean_admission_fee_total(self):
+        return self.cleaned_data.get('admission_fee_total') or 0
+
 class PaymentForm(forms.Form):
     batch = forms.ModelChoiceField(queryset=Batch.objects.all(), widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_batch'}))
     roll = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Search by roll', 'id': 'id_roll'}))
     name = forms.CharField(max_length=100, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Search by student name', 'id': 'id_name'}))
     fee_type = forms.ChoiceField(choices=Payment.FEE_TYPE_CHOICES, initial='monthly', widget=forms.Select(attrs={'class': 'form-control'}))
-    amount = forms.DecimalField(max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter amount (BDT)'}))
+    amount = forms.DecimalField(label='Amount Per Month', max_digits=10, decimal_places=2, widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter monthly amount (BDT)', 'step': '0.01'}))
     payment_month = forms.CharField(
         required=False,
-        label='Payment Month',
+        label='Starting Month',
         widget=forms.TextInput(attrs={'class': 'form-control', 'type': 'month'}),
+    )
+    months_to_pay = forms.IntegerField(
+        label='How Many Months',
+        initial=1,
+        min_value=1,
+        max_value=24,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '24', 'step': '1', 'id': 'id_months_to_pay'}),
     )
     date = forms.DateField(label='Payment Date', initial=date.today, widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}))
 
@@ -86,6 +99,10 @@ class PaymentForm(forms.Form):
         cleaned_data = super().clean()
         if not cleaned_data.get('roll') and not cleaned_data.get('name'):
             raise forms.ValidationError('Search by roll or student name before saving payment.')
+        if cleaned_data.get('fee_type') == 'monthly' and not cleaned_data.get('payment_month'):
+            self.add_error('payment_month', 'Select the first month for this monthly payment.')
+        if cleaned_data.get('fee_type') != 'monthly':
+            cleaned_data['months_to_pay'] = 1
         return cleaned_data
 
 
@@ -146,10 +163,11 @@ class ClientEditForm(forms.ModelForm):
 
     class Meta:
         model = Client
-        fields = ['name', 'email', 'phone', 'guardian_phone', 'monthly_fee', 'batch', 'status', 'pause_month', 'status_comment']
+        fields = ['name', 'email', 'phone', 'guardian_phone', 'monthly_fee', 'admission_fee_total', 'batch', 'status', 'pause_month', 'status_comment']
         labels = {
             'phone': "Student's Number",
             'guardian_phone': 'Guardian Number',
+            'admission_fee_total': 'Admission Fee Total',
         }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter client name'}),
@@ -157,6 +175,7 @@ class ClientEditForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter student's number"}),
             'guardian_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter guardian number'}),
             'monthly_fee': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Student monthly fee', 'step': '0.01'}),
+            'admission_fee_total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Required admission fee', 'step': '0.01'}),
             'batch': forms.Select(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-control'}),
             'pause_month': forms.TextInput(attrs={'class': 'form-control', 'type': 'month'}),
@@ -166,6 +185,7 @@ class ClientEditForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['monthly_fee'].required = False
+        self.fields['admission_fee_total'].required = False
         self.fields['pause_month'].required = False
 
     def clean_email(self):
@@ -173,6 +193,9 @@ class ClientEditForm(forms.ModelForm):
 
     def clean_monthly_fee(self):
         return self.cleaned_data.get('monthly_fee') or 0
+
+    def clean_admission_fee_total(self):
+        return self.cleaned_data.get('admission_fee_total') or 0
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '').strip()

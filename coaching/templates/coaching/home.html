@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,96 +8,404 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #f4f7fb; min-height: 100vh; color: #1f2937; }
-        .app-shell { max-width: 1180px; }
-        .topbar { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px 20px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); }
-        .brand-mark { width: 48px; height: 48px; border-radius: 8px; background: #0d6efd; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 1.35rem; }
-        .card { border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07); }
-        .metric-card { min-height: 132px; }
-        .metric-label { color: #6b7280; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; }
-        .metric-value { font-size: 2.2rem; font-weight: 800; color: #111827; line-height: 1; }
-        .metric-icon { width: 44px; height: 44px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
-        .icon-blue { background: #eaf2ff; color: #0d6efd; }
-        .icon-green { background: #e9f8ef; color: #198754; }
-        .icon-amber { background: #fff5db; color: #b7791f; }
-        .action-card { height: 100%; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-        .action-card:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1); }
-        .action-icon { width: 42px; height: 42px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: #f3f6fb; color: #0d6efd; }
-        .btn-main { background: #0d6efd; border: none; color: #ffffff; border-radius: 8px; }
-        .btn-main:hover { background: #0b5ed7; color: #ffffff; }
-        .btn-outline-soft { border-color: #d7e2f2; color: #1f2937; border-radius: 8px; }
-        .btn-outline-soft:hover { background: #eef4ff; border-color: #bcd2f7; color: #0d6efd; }
-        .section-title { font-size: 1.15rem; font-weight: 800; color: #111827; }
-        .table thead { background: #f8fafc; }
-        .table tbody tr:hover { background: #f9fbff; }
+        :root {
+            --ink: #14213d;
+            --muted: #667085;
+            --line: #dfe7ef;
+            --surface: #ffffff;
+            --soft: #f6f8fb;
+            --blue: #2563eb;
+            --cyan: #0891b2;
+            --green: #0f9f6e;
+            --amber: #d97706;
+            --rose: #e11d48;
+            --violet: #7c3aed;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                linear-gradient(180deg, rgba(37, 99, 235, 0.10), rgba(8, 145, 178, 0.06) 25%, rgba(15, 159, 110, 0.05) 48%, rgba(246, 248, 251, 1) 72%),
+                #f6f8fb;
+            color: var(--ink);
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .app-shell {
+            max-width: 1240px;
+        }
+
+        .hero-panel,
+        .panel,
+        .metric-card,
+        .action-card {
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 16px 40px rgba(20, 33, 61, 0.08);
+        }
+
+        .hero-panel {
+            padding: 24px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hero-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-top: 5px solid var(--blue);
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.08), rgba(15, 159, 110, 0.08), rgba(217, 119, 6, 0.08));
+            pointer-events: none;
+        }
+
+        .hero-panel > .row {
+            position: relative;
+        }
+
+        .brand-mark,
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-mark {
+            background: linear-gradient(135deg, var(--blue), var(--green));
+            color: #fff;
+            font-size: 1.35rem;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+        }
+
+        .eyebrow {
+            color: var(--blue);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .hero-title {
+            font-size: clamp(1.65rem, 3vw, 2.55rem);
+            font-weight: 850;
+            line-height: 1.1;
+            letter-spacing: 0;
+        }
+
+        .hero-copy,
+        .metric-note,
+        .action-card p {
+            color: var(--muted);
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-main,
+        .btn-soft,
+        .btn-outline-soft {
+            border-radius: 8px;
+            font-weight: 700;
+        }
+
+        .btn-main {
+            background: linear-gradient(135deg, var(--blue), var(--cyan));
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .btn-main:hover {
+            background: linear-gradient(135deg, #1d4ed8, #0e7490);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .btn-soft {
+            background: #eef4ff;
+            border-color: #d7e5ff;
+            color: #1d4ed8;
+        }
+
+        .btn-soft:hover,
+        .btn-outline-soft:hover {
+            background: #e6f0ff;
+            border-color: #bcd4ff;
+            color: #1d4ed8;
+        }
+
+        .btn-outline-soft {
+            border-color: var(--line);
+            color: var(--ink);
+            background: #fff;
+        }
+
+        .stat-strip {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .stat-pill {
+            background: #ffffff;
+            border: 1px solid rgba(37, 99, 235, 0.16);
+            border-radius: 8px;
+            padding: 14px;
+            box-shadow: 0 10px 22px rgba(20, 33, 61, 0.06);
+        }
+
+        .stat-label,
+        .metric-label {
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+
+        .stat-value {
+            color: var(--ink);
+            font-size: 1.35rem;
+            font-weight: 850;
+        }
+
+        .metric-card {
+            min-height: 148px;
+            padding: 22px;
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+            border-top-width: 5px;
+        }
+
+        .metric-card.card-blue { border-top-color: var(--blue); }
+        .metric-card.card-amber { border-top-color: var(--amber); }
+        .metric-card.card-green { border-top-color: var(--green); }
+        .metric-card.card-rose { border-top-color: var(--rose); }
+
+        .metric-card:hover,
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 46px rgba(20, 33, 61, 0.11);
+        }
+
+        .metric-value {
+            font-size: 2.25rem;
+            font-weight: 850;
+            line-height: 1;
+        }
+
+        .icon-blue { background: #eaf2ff; color: var(--blue); }
+        .icon-cyan { background: #e6f8fc; color: var(--cyan); }
+        .icon-green { background: #e8f8f1; color: var(--green); }
+        .icon-amber { background: #fff4df; color: var(--amber); }
+        .icon-rose { background: #fff0f3; color: var(--rose); }
+        .icon-violet { background: #f3edff; color: var(--violet); }
+
+        .section-title {
+            color: var(--ink);
+            font-size: 1.05rem;
+            font-weight: 850;
+        }
+
+        .action-card {
+            height: 100%;
+            padding: 20px;
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+            border-left-width: 5px;
+        }
+
+        .action-card.action-blue { border-left-color: var(--blue); }
+        .action-card.action-green { border-left-color: var(--green); }
+        .action-card.action-amber { border-left-color: var(--amber); }
+        .action-card.action-rose { border-left-color: var(--rose); }
+
+        .action-card h3 {
+            font-size: 1rem;
+            font-weight: 850;
+        }
+
+        .panel {
+            padding: 22px;
+        }
+
+        .table {
+            color: var(--ink);
+        }
+
+        .table thead {
+            background: linear-gradient(90deg, #f8fafc, #eef4ff);
+        }
+
+        .table th {
+            color: #475467;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+
+        .table td,
+        .table th {
+            padding: 0.95rem 0.8rem;
+        }
+
+        .table tbody tr {
+            border-color: #edf2f7;
+        }
+
+        .table tbody tr:hover {
+            background: #f7fbff;
+        }
+
+        .badge-soft {
+            border-radius: 999px;
+            padding: 0.45rem 0.65rem;
+            font-weight: 800;
+        }
+
+        .badge-paid { background: #e8f8f1; color: #087f5b; }
+        .badge-pending { background: #fff4df; color: #a16207; }
+        .badge-overdue { background: #fff0f3; color: #be123c; }
+
+        .batch-name {
+            font-weight: 800;
+        }
+
+        .batch-count {
+            min-width: 46px;
+            display: inline-flex;
+            justify-content: center;
+        }
+
+        @media (max-width: 991.98px) {
+            .quick-actions {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .hero-panel,
+            .panel,
+            .metric-card,
+            .action-card {
+                padding: 18px;
+            }
+
+            .stat-strip {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions .btn,
+            .hero-actions .btn {
+                width: 100%;
+            }
+        }
     </style>
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="container app-shell py-4 py-lg-5">
-        <div class="topbar d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center gap-3">
-                <div class="brand-mark"><i class="fas fa-flask"></i></div>
-                <div>
-                    <h1 class="h3 fw-bold mb-1">Easy Chemistry For HSC</h1>
-                    <p class="text-muted mb-0">Student, batch, and payment management dashboard.</p>
+        <section class="hero-panel mb-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-7">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="brand-mark"><i class="fas fa-flask"></i></div>
+                        <div>
+                            <div class="eyebrow">{% if is_owner %}Owner Dashboard{% else %}Staff Dashboard{% endif %}</div>
+                            <h1 class="hero-title mb-0">Easy Chemistry For HSC</h1>
+                        </div>
+                    </div>
+                    <p class="hero-copy mb-4">Students, batches, payments, and notices in one clean control room.</p>
+                    <div class="d-flex flex-wrap gap-2 hero-actions">
+                        <a href="{% url 'payment_list' %}" class="btn btn-main px-4"><i class="fas fa-credit-card me-2"></i>Take Payment</a>
+                        <a href="{% url 'add_student' %}" class="btn btn-soft px-4"><i class="fas fa-user-plus me-2"></i>Add Student</a>
+                        <a href="{% url 'payment_report' %}" class="btn btn-outline-soft px-4"><i class="fas fa-chart-line me-2"></i>View Report</a>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="quick-actions mb-3">
+                        <a href="{% url 'client_list' %}" class="btn btn-outline-soft"><i class="fas fa-users me-2"></i>Students</a>
+                        <a href="{% url 'batch_list' %}" class="btn btn-outline-soft"><i class="fas fa-layer-group me-2"></i>Batches</a>
+                        <a href="{% url 'batch_notice' %}" class="btn btn-outline-soft"><i class="fas fa-paper-plane me-2"></i>Notice</a>
+                        {% if is_owner %}
+                            <a href="{% url 'admin:index' %}" class="btn btn-outline-soft"><i class="fas fa-cogs me-2"></i>Admin</a>
+                        {% endif %}
+                        <a href="{% url 'password_change' %}" class="btn btn-outline-soft"><i class="fas fa-key me-2"></i>Password</a>
+                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-soft"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
+                        </form>
+                    </div>
+                    <div class="stat-strip">
+                        <div class="stat-pill">
+                            <div class="stat-label">Today</div>
+                            <div class="stat-value">৳{{ daily_total }}</div>
+                        </div>
+                        {% if is_owner %}
+                            <div class="stat-pill">
+                                <div class="stat-label">This Month</div>
+                                <div class="stat-value">৳{{ monthly_total }}</div>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-            <div class="d-flex flex-wrap gap-2">
-                <a href="{% url 'payment_list' %}" class="btn btn-main"><i class="fas fa-credit-card me-2"></i>Take Payment</a>
-                <a href="{% url 'batch_notice' %}" class="btn btn-outline-soft"><i class="fas fa-paper-plane me-2"></i>Notice</a>
-                <a href="{% url 'client_list' %}" class="btn btn-outline-soft"><i class="fas fa-users me-2"></i>Students</a>
-                <a href="{% url 'payment_report' %}" class="btn btn-outline-soft"><i class="fas fa-file-invoice me-2"></i>Reports</a>
-                <a href="{% url 'password_change' %}" class="btn btn-outline-soft"><i class="fas fa-key me-2"></i>Change Password</a>
-                <a href="{% url 'admin:index' %}" class="btn btn-outline-soft"><i class="fas fa-cogs me-2"></i>Admin</a>
-                <form method="post" action="{% url 'logout' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-soft"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
-                </form>
-            </div>
-        </div>
+        </section>
 
         <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="card metric-card p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="metric-label mb-2">Total Students</div>
-                            <div class="metric-value">{{ total_students }}</div>
-                        </div>
-                        <div class="metric-icon icon-blue"><i class="fas fa-user-graduate"></i></div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="metric-card card-blue">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="metric-label">Total Students</div>
+                        <div class="icon-box icon-blue"><i class="fas fa-user-graduate"></i></div>
                     </div>
+                    <div class="metric-value">{{ total_students }}</div>
+                    <div class="metric-note mt-2">{{ active_students }} active, {{ paused_students }} paused</div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card metric-card p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="metric-label mb-2">Active Batches</div>
-                            <div class="metric-value">{{ total_batches }}</div>
-                        </div>
-                        <div class="metric-icon icon-amber"><i class="fas fa-layer-group"></i></div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="metric-card card-amber">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="metric-label">Active Batches</div>
+                        <div class="icon-box icon-amber"><i class="fas fa-layer-group"></i></div>
                     </div>
+                    <div class="metric-value">{{ total_batches }}</div>
+                    <div class="metric-note mt-2">Organized by schedule</div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card metric-card p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="metric-label mb-2">Payments Recorded</div>
-                            <div class="metric-value">{{ total_payments }}</div>
-                        </div>
-                        <div class="metric-icon icon-green"><i class="fas fa-wallet"></i></div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="metric-card card-green">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="metric-label">Payment Entries</div>
+                        <div class="icon-box icon-green"><i class="fas fa-wallet"></i></div>
                     </div>
+                    <div class="metric-value">{{ total_payments }}</div>
+                    <div class="metric-note mt-2">Paid records and history</div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="metric-card card-rose">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="metric-label">Needs Review</div>
+                        <div class="icon-box icon-rose"><i class="fas fa-triangle-exclamation"></i></div>
+                    </div>
+                    <div class="metric-value">{{ pending_payments }}</div>
+                    <div class="metric-note mt-2">Pending or overdue payments</div>
                 </div>
             </div>
         </div>
 
         <div class="row g-3 mb-4">
             <div class="col-md-6 col-xl-3">
-                <div class="card action-card p-4">
-                    <div class="action-icon mb-3"><i class="fas fa-user-plus"></i></div>
-                    <h5 class="fw-bold">Add Student</h5>
-                    <p class="text-muted">Enroll a student or import a full list.</p>
+                <div class="action-card action-blue">
+                    <div class="icon-box icon-blue mb-3"><i class="fas fa-user-plus"></i></div>
+                    <h3>Add Student</h3>
+                    <p class="mb-3">Enroll one student or bring in a complete list.</p>
                     <div class="d-flex flex-wrap gap-2">
                         <a href="{% url 'add_student' %}" class="btn btn-main btn-sm">Add</a>
                         <a href="{% url 'import_students' %}" class="btn btn-outline-soft btn-sm">Import</a>
@@ -104,60 +413,107 @@
                 </div>
             </div>
             <div class="col-md-6 col-xl-3">
-                <div class="card action-card p-4">
-                    <div class="action-icon mb-3"><i class="fas fa-credit-card"></i></div>
-                    <h5 class="fw-bold">Payments</h5>
-                    <p class="text-muted">Record monthly and admission fees.</p>
+                <div class="action-card action-green">
+                    <div class="icon-box icon-green mb-3"><i class="fas fa-credit-card"></i></div>
+                    <h3>Payments</h3>
+                    <p class="mb-3">Record admission fees and monthly tuition.</p>
                     <a href="{% url 'payment_list' %}" class="btn btn-main btn-sm">Open</a>
                 </div>
             </div>
             <div class="col-md-6 col-xl-3">
-                <div class="card action-card p-4">
-                    <div class="action-icon mb-3"><i class="fas fa-file-invoice"></i></div>
-                    <h5 class="fw-bold">Payment Report</h5>
-                    <p class="text-muted">Check paid, due, and paused students.</p>
+                <div class="action-card action-amber">
+                    <div class="icon-box icon-amber mb-3"><i class="fas fa-file-invoice"></i></div>
+                    <h3>Payment Report</h3>
+                    <p class="mb-3">Review collection, dues, and batch status.</p>
                     <a href="{% url 'payment_report' %}" class="btn btn-main btn-sm">View</a>
                 </div>
             </div>
             <div class="col-md-6 col-xl-3">
-                <div class="card action-card p-4">
-                    <div class="action-icon mb-3"><i class="fas fa-paper-plane"></i></div>
-                    <h5 class="fw-bold">Batch Notice</h5>
-                    <p class="text-muted">Send SMS notices to a full batch.</p>
+                <div class="action-card action-rose">
+                    <div class="icon-box icon-rose mb-3"><i class="fas fa-paper-plane"></i></div>
+                    <h3>Batch Notice</h3>
+                    <p class="mb-3">Send SMS notices to students or guardians.</p>
                     <a href="{% url 'batch_notice' %}" class="btn btn-main btn-sm">Send</a>
                 </div>
             </div>
         </div>
 
-        <div class="card p-4">
-            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
-                <div>
-                    <h4 class="section-title mb-1">Batch Enrollment Overview</h4>
-                    <p class="text-muted mb-0">Student count per batch.</p>
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="panel h-100">
+                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="section-title mb-1">Batch Enrollment</h2>
+                            <p class="text-muted mb-0">Student count per batch.</p>
+                        </div>
+                        <a href="{% url 'batch_list' %}" class="btn btn-outline-soft btn-sm">Manage Batches</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Batch</th>
+                                    <th>Schedule</th>
+                                    <th class="text-end">Students</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in batches %}
+                                    <tr>
+                                        <td class="batch-name">{{ batch.name }}</td>
+                                        <td class="text-muted">{{ batch.time }}</td>
+                                        <td class="text-end">
+                                            <span class="badge-soft badge-paid batch-count">{{ batch.student_total }}</span>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="3" class="text-center text-muted">No batches available yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <a href="{% url 'batch_list' %}" class="btn btn-outline-soft">Manage Batches</a>
             </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Batch</th>
-                            <th>Schedule</th>
-                            <th class="text-end">Students</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for batch in batches %}
-                            <tr>
-                                <td class="fw-semibold">{{ batch.name }}</td>
-                                <td>{{ batch.time }}</td>
-                                <td class="text-end">{{ batch.client_set.count }}</td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="3" class="text-center text-muted">No batches available yet.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+            <div class="col-lg-5">
+                <div class="panel h-100">
+                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="section-title mb-1">Recent Payments</h2>
+                            <p class="text-muted mb-0">Latest recorded transactions.</p>
+                        </div>
+                        <a href="{% url 'payment_list' %}" class="btn btn-outline-soft btn-sm">All Payments</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in recent_payments %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ payment.client.name }}</div>
+                                            <div class="small text-muted">{{ payment.date|date:"d M Y" }} · {{ payment.client.batch.name }}</div>
+                                        </td>
+                                        <td class="fw-bold">৳{{ payment.amount }}</td>
+                                        <td>
+                                            <span class="badge-soft {% if payment.status == 'paid' %}badge-paid{% elif payment.status == 'overdue' %}badge-overdue{% else %}badge-pending{% endif %}">
+                                                {{ payment.status|capfirst }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="3" class="text-center text-muted">No payments recorded yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

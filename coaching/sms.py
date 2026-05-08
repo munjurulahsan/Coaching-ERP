@@ -1,6 +1,7 @@
 import json
 import logging
 import calendar
+import re
 from urllib.parse import parse_qsl, urlencode
 from urllib.request import Request, urlopen
 
@@ -9,12 +10,12 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+BD_DIGIT_TRANSLATION = str.maketrans('০১২৩৪৫৬৭৮৯', '0123456789')
+
 
 def normalize_bd_sms_number(phone_number):
-    phone_number = (phone_number or '').strip()
-    if phone_number.startswith('+88'):
-        phone_number = phone_number[3:]
-    phone_number = phone_number.replace(' ', '').replace('-', '')
+    phone_number = (phone_number or '').strip().translate(BD_DIGIT_TRANSLATION)
+    phone_number = re.sub(r'\D+', '', phone_number)
 
     if phone_number.startswith('01') and len(phone_number) == 11:
         return '88' + phone_number
@@ -122,9 +123,9 @@ def payment_sms_message(payment):
         except (ValueError, IndexError):
             month_text = f' for {payment.payment_month}'
     return (
-        f'Payment received for {payment.client.name}. '
-        f'Type: {fee_type}{month_text}. '
-        f'Amount: {payment.amount} BDT. Thank you.'
+        f'Dear {payment.client.name}, your {fee_type} payment{month_text} '
+        f'of BDT {payment.amount} has been received. Thank you. '
+        f'(Easy Chemistry For HSC)'
     )
 
 

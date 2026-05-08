@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,6 +15,7 @@
         .page-title { font-size: 2rem; font-weight: 800; }
         .form-control, .form-select, .btn { border-radius: 8px; }
     </style>
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="container py-5">
@@ -61,7 +63,13 @@
                         {{ form.monthly_fee }}
                         {{ form.monthly_fee.errors }}
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-6">
+                        <label class="form-label">Admission Fee Total</label>
+                        {{ form.admission_fee_total }}
+                        <div class="form-text">Discount/custom admission fee dite hole ekhane final amount set korun.</div>
+                        {{ form.admission_fee_total.errors }}
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label">Batch</label>
                         {{ form.batch }}
                         {{ form.batch.errors }}

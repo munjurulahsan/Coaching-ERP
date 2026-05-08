@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -91,13 +92,14 @@
             }
         }
     </style>
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="container py-5">
         <div class="page-header d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4 no-print">
             <div>
                 <h1 class="page-title mb-1">Payment Report</h1>
-                <p class="text-muted mb-0">Track collections, dues, and student payment status from one place.</p>
+                <p class="text-muted mb-0">{% if is_owner %}Track collections, dues, and student payment status from one place.{% else %}Track daily collections, dues, and student payment status from one place.{% endif %}</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'payment_list' %}" class="btn btn-primary">Take Payment</a>
@@ -134,7 +136,7 @@
         </form>
 
         <div class="row g-3 mb-4">
-            <div class="col-md-6">
+            <div class="{% if is_owner %}col-md-6{% else %}col-md-12{% endif %}">
                 <div class="metric-card p-3 border-success h-100">
                     <div class="d-flex justify-content-between gap-2 align-items-start">
                         <div class="metric-label">Today's Collection</div>
@@ -144,38 +146,42 @@
                     <p class="metric-value text-success mb-0">৳{{ daily_collection }}</p>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="metric-card p-3 border-primary h-100">
-                    <div class="d-flex justify-content-between gap-2 align-items-start">
-                        <div class="metric-label">This Month's Collection</div>
-                        <button class="btn btn-sm btn-outline-primary no-print" type="button" onclick="printSection('monthlyCollectionPrint')">Print</button>
+            {% if is_owner %}
+                <div class="col-md-6">
+                    <div class="metric-card p-3 border-primary h-100">
+                        <div class="d-flex justify-content-between gap-2 align-items-start">
+                            <div class="metric-label">This Month's Collection</div>
+                            <button class="btn btn-sm btn-outline-primary no-print" type="button" onclick="printSection('monthlyCollectionPrint')">Print</button>
+                        </div>
+                        <p class="text-muted mb-1">{{ collection_month_label }}</p>
+                        <p class="metric-value text-primary mb-0">৳{{ monthly_collection }}</p>
                     </div>
-                    <p class="text-muted mb-1">{{ collection_month_label }}</p>
-                    <p class="metric-value text-primary mb-0">৳{{ monthly_collection }}</p>
                 </div>
-            </div>
+            {% endif %}
         </div>
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="metric-card p-3 h-100">
-                    <div class="metric-label">Total Paid</div>
-                    <p class="metric-value mb-0">৳{{ total_paid }}</p>
+        {% if is_owner %}
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="metric-card p-3 h-100">
+                        <div class="metric-label">Total Paid</div>
+                        <p class="metric-value mb-0">৳{{ total_paid }}</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card p-3 h-100">
+                        <div class="metric-label">Total Pending</div>
+                        <p class="metric-value mb-0">৳{{ total_pending }}</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="metric-card p-3 h-100">
+                        <div class="metric-label">Total Overdue</div>
+                        <p class="metric-value mb-0">৳{{ total_overdue }}</p>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="metric-card p-3 h-100">
-                    <div class="metric-label">Total Pending</div>
-                    <p class="metric-value mb-0">৳{{ total_pending }}</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="metric-card p-3 h-100">
-                    <div class="metric-label">Total Overdue</div>
-                    <p class="metric-value mb-0">৳{{ total_overdue }}</p>
-                </div>
-            </div>
-        </div>
+        {% endif %}
 
         {% if selected_batch %}
             <div class="report-panel mb-4">
@@ -240,8 +246,9 @@
                                         {% if row.has_paid_admission %}
                                             <span class="badge bg-success">Paid</span>
                                         {% else %}
-                                            <span class="badge bg-danger">Unpaid</span>
+                                            <span class="badge bg-danger">Due ৳{{ row.admission_due_amount }}</span>
                                         {% endif %}
+                                        <div class="small text-muted">Paid ৳{{ row.admission_paid_amount }} / Total ৳{{ row.student.admission_fee_total }}</div>
                                     </td>
                                 </tr>
                                 {% if row.has_paid_monthly %}
@@ -265,7 +272,7 @@
                                                                 <td>{{ payment.display_month }}</td>
                                                                 <td>৳{{ payment.amount }}</td>
                                                                 <td>{{ payment.status|capfirst }}</td>
-                                                                <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                                                                <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit/Delete</a></td>
                                                             </tr>
                                                         {% endfor %}
                                                     </tbody>
@@ -314,7 +321,7 @@
                             <td>{{ payment.payment_month|default:"-" }}</td>
                             <td>৳{{ payment.amount }}</td>
                             <td>{{ payment.status|capfirst }}</td>
-                            <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                            <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit/Delete</a></td>
                         </tr>
                     {% empty %}
                         <tr><td colspan="9" class="text-center">No payments found for this filter.</td></tr>
@@ -358,39 +365,41 @@
         </table>
     </section>
 
-    <section id="monthlyCollectionPrint" class="print-section">
-        <h2>Monthly Collection Details</h2>
-        <p><strong>Month:</strong> {{ collection_month_label }}</p>
-        <p><strong>Total:</strong> ৳{{ monthly_collection }}</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Batch</th>
-                    <th>Roll</th>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Month</th>
-                    <th>Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for payment in monthly_collection_payments %}
+    {% if is_owner %}
+        <section id="monthlyCollectionPrint" class="print-section">
+            <h2>Monthly Collection Details</h2>
+            <p><strong>Month:</strong> {{ collection_month_label }}</p>
+            <p><strong>Total:</strong> ৳{{ monthly_collection }}</p>
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ payment.date }}</td>
-                        <td>{{ payment.client.batch.name }}</td>
-                        <td>{{ payment.client.roll }}</td>
-                        <td>{{ payment.client.name }}</td>
-                        <td>{{ payment.get_fee_type_display }}</td>
-                        <td>{{ payment.display_month }}</td>
-                        <td>৳{{ payment.amount }}</td>
+                        <th>Date</th>
+                        <th>Batch</th>
+                        <th>Roll</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Month</th>
+                        <th>Amount</th>
                     </tr>
-                {% empty %}
-                    <tr><td colspan="7">No paid collection found for this month.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+                </thead>
+                <tbody>
+                    {% for payment in monthly_collection_payments %}
+                        <tr>
+                            <td>{{ payment.date }}</td>
+                            <td>{{ payment.client.batch.name }}</td>
+                            <td>{{ payment.client.roll }}</td>
+                            <td>{{ payment.client.name }}</td>
+                            <td>{{ payment.get_fee_type_display }}</td>
+                            <td>{{ payment.display_month }}</td>
+                            <td>৳{{ payment.amount }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7">No paid collection found for this month.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    {% endif %}
 
     <section id="studentListPrint" class="print-section">
         <h2>Student List{% if selected_batch %} - {{ selected_batch.name }}{% endif %}</h2>
@@ -413,7 +422,7 @@
                         <td>{{ row.student.name }}</td>
                         <td>{{ row.student.phone }}</td>
                         <td>{% if row.has_paid_monthly %}Paid - {{ row.paid_months }}{% else %}Due{% endif %}</td>
-                        <td>{% if row.has_paid_admission %}Paid{% else %}Unpaid{% endif %}</td>
+                        <td>{% if row.has_paid_admission %}Paid{% else %}Due ৳{{ row.admission_due_amount }}{% endif %}</td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="5">Select a batch to print student list.</td></tr>

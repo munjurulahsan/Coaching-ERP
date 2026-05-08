@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
-from django.db.models import Sum, Count, Exists, OuterRef
+from django.db.models import Sum, Count
 from django.db import transaction
 from datetime import date
 import calendar
@@ -14,6 +15,14 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from .models import BatchNotice, BatchNoticeRecipient, Coach, Client, Session, Payment, Batch
 from .forms import BatchNoticeForm, ClientForm, PaymentForm, PaymentEditForm, BatchForm, ClientEditForm, BulkStudentImportForm
 from .sms import notify_payment_received, send_sms_detailed
+
+
+def is_owner(user):
+    return user.is_authenticated and user.is_superuser
+
+
+def owner_required(view_func):
+    return user_passes_test(is_owner, login_url='home')(view_func)
 
 
 def format_payment_month(payment):
@@ -34,6 +43,20 @@ def format_month_value(month_value):
         return f"{calendar.month_name[int(month)]} {year}"
     except (ValueError, IndexError):
         return month_value
+
+
+def add_months_to_value(month_value, offset):
+    year, month = [int(part) for part in month_value.split('-', 1)]
+    month_index = (year * 12) + (month - 1) + offset
+    next_year = month_index // 12
+    next_month = (month_index % 12) + 1
+    return f'{next_year}-{next_month:02d}'
+
+
+def monthly_payment_values(start_month, months_to_pay):
+    if not start_month:
+        return []
+    return [add_months_to_value(start_month, offset) for offset in range(months_to_pay)]
 
 
 def month_range(start_date, end_date):
@@ -139,6 +162,27 @@ def add_duplicate_payment_error(form, client, fee_type, payment_month):
     return True
 
 
+def add_duplicate_months_error(form, client, fee_type, payment_months):
+    if fee_type != 'monthly' or not payment_months:
+        return False
+    duplicates = list(
+        Payment.objects.filter(
+            client=client,
+            fee_type='monthly',
+            payment_month__in=payment_months,
+        )
+        .order_by('payment_month', 'date', 'id')
+    )
+    if not duplicates:
+        return False
+    duplicate_months = ', '.join(format_payment_month(payment) for payment in duplicates)
+    form.add_error(
+        'payment_month',
+        f'{client.name} already has monthly payment entries for {duplicate_months}. Edit those payments instead.',
+    )
+    return True
+
+
 def resolve_payment_client(batch, roll=None, name=''):
     students = Client.objects.filter(batch=batch)
     if roll:
@@ -197,6 +241,10 @@ def get_client_name(request):
     roll = request.GET.get('roll')
     name = request.GET.get('name', '')
     payment_month = request.GET.get('payment_month', '')
+    try:
+        months_to_pay = max(1, min(int(request.GET.get('months_to_pay', 1)), 24))
+    except (TypeError, ValueError):
+        months_to_pay = 1
     fee_type = request.GET.get('fee_type', 'monthly')
     if not batch_id:
         return JsonResponse({'name': '', 'monthly_fee': '', 'due_payments': []})
@@ -230,6 +278,7 @@ def get_client_name(request):
         return JsonResponse({'name': '', 'monthly_fee': '', 'error': error, 'due_payments': []})
 
     due_payments = get_monthly_due_months(client)
+    selected_payment_months = monthly_payment_values(payment_month, months_to_pay) if fee_type == 'monthly' else []
 
     selected_month_paid = False
     selected_month_duplicate = None
@@ -242,18 +291,33 @@ def get_client_name(request):
             status='paid',
             amount__gt=0,
         ).exists()
+    selected_month_details = []
+    for selected_payment_month in selected_payment_months:
+        duplicate = find_duplicate_payment(client, 'monthly', selected_payment_month)
+        selected_month_details.append({
+            'raw_month': selected_payment_month,
+            'month': format_month_value(selected_payment_month),
+            'duplicate': bool(duplicate),
+            'duplicate_status': duplicate.status.capitalize() if duplicate else '',
+            'duplicate_amount': str(duplicate.amount) if duplicate else '',
+            'paid': Payment.objects.filter(
+                client=client,
+                fee_type='monthly',
+                payment_month=selected_payment_month,
+                status='paid',
+                amount__gt=0,
+            ).exists(),
+            'paused': client.status == 'paused' and client.pause_month == selected_payment_month,
+        })
 
     is_paused_for_month = bool(
         payment_month
         and client.status == 'paused'
         and client.pause_month == payment_month
     )
-    admission_fee_paid = Payment.objects.filter(
-        client=client,
-        fee_type='admission',
-        status='paid',
-        amount__gt=0,
-    ).exists()
+    admission_paid_amount = client.admission_paid_amount()
+    admission_due_amount = client.admission_due_amount()
+    admission_fee_paid = client.admission_fee_is_paid()
     admission_date = get_client_admission_date(client)
     last_cleared_payment = get_last_cleared_month(client)
 
@@ -272,11 +336,16 @@ def get_client_name(request):
         'selected_month_duplicate': bool(selected_month_duplicate),
         'selected_month_duplicate_status': selected_month_duplicate.status.capitalize() if selected_month_duplicate else '',
         'selected_month_duplicate_amount': str(selected_month_duplicate.amount) if selected_month_duplicate else '',
+        'selected_months': selected_month_details,
+        'selected_month_count': len(selected_month_details),
         'last_cleared_month': format_payment_month(last_cleared_payment) if last_cleared_payment else '',
         'last_cleared_month_raw': last_cleared_payment.payment_month if last_cleared_payment else '',
         'last_cleared_amount': str(last_cleared_payment.amount) if last_cleared_payment else '',
         'last_cleared_date': last_cleared_payment.date.isoformat() if last_cleared_payment else '',
         'admission_fee_paid': admission_fee_paid,
+        'admission_fee_total': str(client.admission_fee_total),
+        'admission_paid_amount': str(admission_paid_amount),
+        'admission_due_amount': str(admission_due_amount),
         'due_payments': due_payments,
         'due_count': len(due_payments),
     })
@@ -295,19 +364,31 @@ def get_next_roll(request):
 def home(request):
     today = date.today()
     start_of_month = today.replace(day=1)
+    user_is_owner = is_owner(request.user)
 
     total_students = Client.objects.count()
+    active_students = Client.objects.filter(status='active').count()
+    paused_students = Client.objects.filter(status='paused').count()
     total_batches = Batch.objects.count()
     total_payments = Payment.objects.count()
     daily_total = Payment.objects.filter(date=today, status='paid').aggregate(total=Sum('amount'))['total'] or 0
-    monthly_total = Payment.objects.filter(date__gte=start_of_month, status='paid').aggregate(total=Sum('amount'))['total'] or 0
-    batches = Batch.objects.all()
+    monthly_total = 0
+    if user_is_owner:
+        monthly_total = Payment.objects.filter(date__gte=start_of_month, status='paid').aggregate(total=Sum('amount'))['total'] or 0
+    pending_payments = Payment.objects.exclude(status='paid').count()
+    recent_payments = Payment.objects.select_related('client', 'client__batch').order_by('-date', '-id')[:5]
+    batches = Batch.objects.annotate(student_total=Count('client')).order_by('name')
 
     context = {
+        'is_owner': user_is_owner,
         'daily_total': daily_total,
         'monthly_total': monthly_total,
+        'pending_payments': pending_payments,
         'batches': batches,
+        'recent_payments': recent_payments,
         'total_students': total_students,
+        'active_students': active_students,
+        'paused_students': paused_students,
         'total_batches': total_batches,
         'total_payments': total_payments,
     }
@@ -323,9 +404,9 @@ def add_student(request):
         client.roll = get_next_roll_value(client.batch) if has_students else manual_roll or get_next_roll_value(client.batch)
         tuition_fee = client_form.cleaned_data.get('tuition_fee')
         client.save()
-        admission_fee = client_form.cleaned_data.get('admission_fee')
-        if admission_fee:
-            payment = Payment.objects.create(client=client, fee_type='admission', amount=admission_fee, date=date.today(), status='paid')
+        admission_fee_paid = client_form.cleaned_data.get('admission_fee_paid')
+        if admission_fee_paid:
+            payment = Payment.objects.create(client=client, fee_type='admission', amount=admission_fee_paid, date=date.today(), status='paid')
             notify_payment_received(payment)
         if tuition_fee:
             payment = Payment.objects.create(
@@ -451,6 +532,7 @@ def manage_payment(request):
 
 
 @login_required
+@owner_required
 def batch_create(request):
     form = BatchForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -464,6 +546,7 @@ def batch_create(request):
 
 
 @login_required
+@owner_required
 def batch_edit(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
     form = BatchForm(request.POST or None, instance=batch)
@@ -478,6 +561,7 @@ def batch_edit(request, pk):
 
 
 @login_required
+@owner_required
 @require_POST
 def batch_delete(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
@@ -613,13 +697,26 @@ class PaymentListView(LoginRequiredMixin, ListView):
             name = form.cleaned_data['name']
             amount = form.cleaned_data['amount']
             payment_month = form.cleaned_data['payment_month']
+            months_to_pay = form.cleaned_data['months_to_pay']
             date_val = form.cleaned_data['date']
             fee_type = form.cleaned_data['fee_type']
             client, error = resolve_payment_client(batch, roll=roll, name=name)
             if client:
-                if not add_duplicate_payment_error(form, client, fee_type, payment_month):
-                    payment = Payment.objects.create(client=client, fee_type=fee_type, amount=amount, payment_month=payment_month, date=date_val, status='paid')
-                    notify_payment_received(payment)
+                payment_months = monthly_payment_values(payment_month, months_to_pay) if fee_type == 'monthly' else [payment_month]
+                if not add_duplicate_months_error(form, client, fee_type, payment_months):
+                    created_payments = []
+                    with transaction.atomic():
+                        for selected_month in payment_months:
+                            created_payments.append(Payment.objects.create(
+                                client=client,
+                                fee_type=fee_type,
+                                amount=amount,
+                                payment_month=selected_month,
+                                date=date_val,
+                                status='paid',
+                            ))
+                    for payment in created_payments:
+                        notify_payment_received(payment)
                     return redirect('payment_list')
             else:
                 form.add_error('roll' if roll else 'name', error)
@@ -650,6 +747,17 @@ def payment_edit(request, pk):
 
 
 @login_required
+@require_POST
+def payment_delete(request, pk):
+    payment = get_object_or_404(Payment.objects.select_related('client', 'client__batch'), pk=pk)
+    next_url = request.POST.get('next') or request.GET.get('next')
+    payment.delete()
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        return redirect(next_url)
+    return redirect('payment_list')
+
+
+@login_required
 def client_profile(request, pk):
     client = get_object_or_404(Client, pk=pk)
     payments = Payment.objects.filter(client=client).order_by('-date')
@@ -658,6 +766,9 @@ def client_profile(request, pk):
         'payments': payments,
         'total_paid': client.paid_amount(),
         'payment_count': client.total_payments(),
+        'admission_paid': client.admission_paid_amount(),
+        'admission_due': client.admission_due_amount(),
+        'admission_fee_paid': client.admission_fee_is_paid(),
     }
     return render(request, 'coaching/client_profile.html', context)
 
@@ -674,12 +785,16 @@ def batch_list(request):
             'paid_students': paid_students,
             'unpaid_students': max(batch.total_students - paid_students, 0),
         })
-    return render(request, 'coaching/batch_list.html', {'batch_info': batch_info})
+    return render(request, 'coaching/batch_list.html', {
+        'batch_info': batch_info,
+        'is_owner': is_owner(request.user),
+    })
 
 
 @login_required
 def payment_report(request):
     today = date.today()
+    user_is_owner = is_owner(request.user)
     batches = Batch.objects.all()
     selected_batch_id = request.GET.get('batch')
     selected_payment_month = request.GET.get('payment_month', '').strip()
@@ -701,9 +816,13 @@ def payment_report(request):
     if to_date:
         payments = payments.filter(date__lte=to_date)
 
-    total_paid = payments.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
-    total_pending = payments.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
-    total_overdue = payments.filter(status='overdue').aggregate(total=Sum('amount'))['total'] or 0
+    total_paid = 0
+    total_pending = 0
+    total_overdue = 0
+    if user_is_owner:
+        total_paid = payments.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
+        total_pending = payments.filter(status='pending').aggregate(total=Sum('amount'))['total'] or 0
+        total_overdue = payments.filter(status='overdue').aggregate(total=Sum('amount'))['total'] or 0
     daily_collection_payments = (
         collection_payments.select_related('client', 'client__batch')
         .filter(date=today)
@@ -719,9 +838,9 @@ def payment_report(request):
     for payment in monthly_collection_payments:
         payment.display_month = format_payment_month(payment)
     daily_collection = sum(payment.amount for payment in daily_collection_payments)
-    monthly_collection = sum(payment.amount for payment in monthly_collection_payments)
-    admission_payments = Payment.objects.filter(client=OuterRef('pk'), fee_type='admission')
-    paid_admission_payments = admission_payments.filter(status='paid', amount__gt=0)
+    monthly_collection = 0
+    if user_is_owner:
+        monthly_collection = sum(payment.amount for payment in monthly_collection_payments)
     if selected_batch:
         monthly_paid_payments = Payment.objects.select_related('client').filter(
             client__batch=selected_batch,
@@ -747,19 +866,18 @@ def payment_report(request):
         else:
             due_students = due_students.filter(status='active')
 
-        batch_students = (
-            due_students.annotate(
-                has_paid_admission=Exists(paid_admission_payments),
-            )
-            .order_by('roll', 'name')
-        )
+        batch_students = due_students.order_by('roll', 'name')
         for student in batch_students:
             student_monthly_payments = monthly_payments_by_student.get(student.pk, [])
             paid_months = [payment.display_month for payment in student_monthly_payments]
+            admission_paid_amount = student.admission_paid_amount()
+            admission_due_amount = student.admission_due_amount()
             batch_student_rows.append({
                 'student': student,
                 'has_paid_monthly': bool(student_monthly_payments),
-                'has_paid_admission': student.has_paid_admission,
+                'has_paid_admission': student.admission_fee_is_paid(),
+                'admission_paid_amount': admission_paid_amount,
+                'admission_due_amount': admission_due_amount,
                 'monthly_payments': student_monthly_payments,
                 'paid_months': ', '.join(paid_months),
             })
@@ -769,6 +887,7 @@ def payment_report(request):
     monthly_due_count = total_batch_students - monthly_paid_count
 
     context = {
+        'is_owner': user_is_owner,
         'batches': batches,
         'payments': payments,
         'selected_batch': selected_batch,

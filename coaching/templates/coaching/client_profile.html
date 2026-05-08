@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,6 +18,7 @@
         .btn, .badge { border-radius: 8px; }
         .table thead th { background: #f8fafc; color: #334155; white-space: nowrap; }
     </style>
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="container py-5">
@@ -29,6 +31,16 @@
                 <p class="mb-1"><strong>Student's Number:</strong> {{ client.phone|default:"N/A" }}</p>
                 <p class="mb-1"><strong>Guardian Number:</strong> {{ client.guardian_phone|default:"N/A" }}</p>
                 <p class="mb-1"><strong>Monthly Fee:</strong> ৳{{ client.monthly_fee }}</p>
+                <p class="mb-1"><strong>Admission Fee Total:</strong> ৳{{ client.admission_fee_total }}</p>
+                <p class="mb-1"><strong>Admission Paid:</strong> ৳{{ admission_paid }}</p>
+                <p class="mb-1">
+                    <strong>Admission Status:</strong>
+                    {% if admission_fee_paid %}
+                        <span class="badge bg-success">Paid</span>
+                    {% else %}
+                        <span class="badge bg-danger">Due ৳{{ admission_due }}</span>
+                    {% endif %}
+                </p>
                 <p class="mb-1">
                     <strong>Status:</strong>
                     {% if client.status == 'active' %}
@@ -48,6 +60,7 @@
                 <a href="{% url 'payment_list' %}" class="btn btn-success">Take Payment</a>
                 <a href="{% url 'client_edit' client.pk %}" class="btn btn-primary">Edit Profile</a>
                 <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">Student List</a>
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">Dashboard</a>
             </div>
         </div>
 
@@ -68,6 +81,12 @@
                 <div class="metric-card p-3 mb-3">
                     <div class="metric-label">Batch Students</div>
                     <p class="metric-value mb-0">{{ client.batch.client_set.count }}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="metric-card p-3 mb-3">
+                    <div class="metric-label">Admission Due</div>
+                    <p class="metric-value {% if admission_due %}text-danger{% else %}text-success{% endif %} mb-0">৳{{ admission_due }}</p>
                 </div>
             </div>
         </div>
@@ -103,7 +122,7 @@
                                             <span class="badge bg-danger">Overdue</span>
                                         {% endif %}
                                     </td>
-                                    <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                                    <td><a href="{% url 'payment_edit' payment.pk %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Edit/Delete</a></td>
                                 </tr>
                             {% empty %}
                                 <tr><td colspan="6" class="text-center">No payments recorded yet.</td></tr>

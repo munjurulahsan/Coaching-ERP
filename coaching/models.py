@@ -41,6 +41,7 @@ class Client(models.Model):
     admission_date = models.DateField(default=date.today)
     goals = models.TextField(blank=True)
     monthly_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    admission_fee_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
     roll = models.CharField(max_length=30)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
@@ -60,6 +61,18 @@ class Client(models.Model):
 
     def paid_amount(self):
         return self.payment_set.filter(status='paid').aggregate(total=Sum('amount'))['total'] or 0
+
+    def admission_paid_amount(self):
+        return self.payment_set.filter(fee_type='admission', status='paid').aggregate(total=Sum('amount'))['total'] or 0
+
+    def admission_due_amount(self):
+        due_amount = self.admission_fee_total - self.admission_paid_amount()
+        return due_amount if due_amount > 0 else 0
+
+    def admission_fee_is_paid(self):
+        if self.admission_fee_total <= 0:
+            return self.admission_paid_amount() > 0
+        return self.admission_due_amount() <= 0
 
     def total_payments(self):
         return self.payment_set.count()

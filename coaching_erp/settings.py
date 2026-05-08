@@ -149,9 +149,10 @@ SMS_TIMEOUT_SECONDS = config('SMS_TIMEOUT_SECONDS', default=10, cast=int)
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-FORCE_SCRIPT_NAME = config('FORCE_SCRIPT_NAME', default='', cast=str) or None
+configured_force_script_name = config('FORCE_SCRIPT_NAME', default='', cast=str).strip()
+FORCE_SCRIPT_NAME = configured_force_script_name if configured_force_script_name and not DEBUG else None
 if FORCE_SCRIPT_NAME:
-    STATIC_URL = f'{FORCE_SCRIPT_NAME.rstrip('/')}/static/'
+    STATIC_URL = f"{FORCE_SCRIPT_NAME.rstrip('/')}/static/"
 else:
     STATIC_URL = '/static/'
 

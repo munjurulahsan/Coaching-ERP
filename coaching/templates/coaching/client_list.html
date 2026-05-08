@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,6 +52,7 @@
             }
         }
     </style>
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="container py-5">
@@ -114,6 +116,7 @@
                             <th>Phone</th>
                             <th>Email</th>
                             <th>Monthly Fee</th>
+                            <th>Admission Due</th>
                             <th>Status</th>
                             <th>Paid</th>
                             <th>Actions</th>
@@ -128,6 +131,13 @@
                                 <td>{{ client.phone }}</td>
                                 <td>{{ client.email|default:"" }}</td>
                                 <td>৳{{ client.monthly_fee }}</td>
+                                <td>
+                                    {% if client.admission_fee_is_paid %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">৳{{ client.admission_due_amount }}</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if client.status == 'active' %}
                                         <span class="badge bg-success">Active</span>
@@ -148,7 +158,7 @@
                                 </td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="9" class="text-center">No students found.</td></tr>
+                            <tr><td colspan="10" class="text-center">No students found.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

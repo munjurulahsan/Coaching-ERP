@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,6 +20,7 @@
         .btn-outline-soft { border-color: #d7e2f2; color: #1f2937; }
         .btn-outline-soft:hover { background: #eef4ff; border-color: #bcd2f7; color: #0d6efd; }
     </style>
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="container py-5">
@@ -67,18 +69,26 @@
                                 {{ client_form.guardian_phone.errors }}
                             </div>
                         </div>
-                        <div class="mb-3">
-                            {{ client_form.monthly_fee.label_tag }}
-                            {{ client_form.monthly_fee }}
-                            <div class="form-text">Ei fixed monthly fee payment page-e monthly payment select korle auto fill hobe.</div>
-                            {{ client_form.monthly_fee.errors }}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ client_form.monthly_fee.label_tag }}
+                                {{ client_form.monthly_fee }}
+                                <div class="form-text">Ei fixed monthly fee payment page-e monthly payment select korle auto fill hobe.</div>
+                                {{ client_form.monthly_fee.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ client_form.admission_fee_total.label_tag }}
+                                {{ client_form.admission_fee_total }}
+                                <div class="form-text">Student-er jonno final/custom admission fee. Discount dile kom amount din.</div>
+                                {{ client_form.admission_fee_total.errors }}
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                {{ client_form.admission_fee.label_tag }}
-                                {{ client_form.admission_fee }}
-                                <div class="form-text">Only admission fee diye-o student vorti kora jabe.</div>
-                                {{ client_form.admission_fee.errors }}
+                                {{ client_form.admission_fee_paid.label_tag }}
+                                {{ client_form.admission_fee_paid }}
+                                <div class="form-text">Vortir somoy joto taka dilo. Total-er kom hole due thakbe.</div>
+                                {{ client_form.admission_fee_paid.errors }}
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ client_form.tuition_fee.label_tag }}

@@ -42,4 +42,5 @@ urlpatterns = [
     path('sessions/', views.SessionListView.as_view(), name='session_list'),
     path('payments/', views.PaymentListView.as_view(), name='payment_list'),
     path('payments/<int:pk>/edit/', views.payment_edit, name='payment_edit'),
+    path('payments/<int:pk>/delete/', views.payment_delete, name='payment_delete'),
 ]

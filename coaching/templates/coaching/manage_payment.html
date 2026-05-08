@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,6 +15,7 @@
         .form-control, .form-select, .btn { border-radius: 8px; }
         .table { background: white; border-radius: 8px; overflow: hidden; }
     </style>
+    <link href="{% static 'coaching/mobile.css' %}" rel="stylesheet">
 </head>
 <body>
     <div class="container py-5">
@@ -227,8 +229,8 @@
                             selectedMonthInfo.innerHTML = '<span class="badge bg-danger">No payment found for this month</span>';
                         }
                         admissionFeeInfo.innerHTML = data.admission_fee_paid
-                            ? '<span class="badge bg-success">Admission fee paid</span>'
-                            : '<span class="badge bg-danger">Admission fee due</span>';
+                            ? `<span class="badge bg-success">Admission fee paid</span><div class="small text-muted">Paid ৳${escapeHtml(data.admission_paid_amount || '0')} of ৳${escapeHtml(data.admission_fee_total || '0')}</div>`
+                            : `<span class="badge bg-danger">Admission fee due ৳${escapeHtml(data.admission_due_amount || '0')}</span><div class="small text-muted">Paid ৳${escapeHtml(data.admission_paid_amount || '0')} of ৳${escapeHtml(data.admission_fee_total || '0')}</div>`;
                         if (data.due_payments.length) {
                             previousDueHistory.innerHTML = data.due_payments.map(payment =>
                                 `<div class="border-top py-1">${payment.month} - ৳${payment.amount} - ${payment.date} - ${payment.status}</div>`
